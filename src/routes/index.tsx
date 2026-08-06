@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { CopilotChat } from "@/components/CopilotChat";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
