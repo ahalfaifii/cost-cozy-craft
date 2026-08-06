@@ -210,7 +210,7 @@ export function CopilotChat() {
             placeholder="Ask a question or describe what you need"
           />
           <PromptInputFooter className="justify-end">
-            <PromptInputSubmit status={waiting ? "submitted" : undefined} disabled={!input.trim()} />
+            <PromptInputSubmit status={waiting ? "submitted" : "ready"} disabled={!input.trim()} />
           </PromptInputFooter>
         </PromptInput>
       </div>
