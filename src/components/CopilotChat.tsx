@@ -183,7 +183,7 @@ export function CopilotChat() {
           {messages.map((message) => (
             <Message key={message.id} from={message.from === "user" ? "user" : "assistant"}>
               <MessageContent>
-                <MessageResponse>{message.text}</MessageResponse>
+                <MessageResponse>{explain(message.text)}</MessageResponse>
               </MessageContent>
             </Message>
           ))}
