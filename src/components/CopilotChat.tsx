@@ -30,6 +30,17 @@ const SUGGESTIONS = [
   "run a dry-run savings assessment for iam2",
 ];
 
+/** Turns raw Copilot Studio error codes into guidance the committee can act on. */
+function explain(text: string): string {
+  if (text.includes("IntegratedAuthenticationNotSupportedInChannel")) {
+    return "The agent is set to Microsoft (integrated) authentication, which only works inside Teams. In Copilot Studio open Settings → Security → Authentication, switch to “No authentication” (or manual Entra auth), then publish again.";
+  }
+  if (text.includes("LatestPublishedVersionNotFound")) {
+    return "The agent has not been published yet. In Copilot Studio choose Publish, then retry here.";
+  }
+  return text;
+}
+
 export function CopilotChat() {
   const start = useServerFn(startCopilotConversation);
   const send = useServerFn(sendCopilotMessage);
@@ -172,7 +183,7 @@ export function CopilotChat() {
           {messages.map((message) => (
             <Message key={message.id} from={message.from === "user" ? "user" : "assistant"}>
               <MessageContent>
-                <MessageResponse>{message.text}</MessageResponse>
+                <MessageResponse>{explain(message.text)}</MessageResponse>
               </MessageContent>
             </Message>
           ))}
