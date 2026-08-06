@@ -13,7 +13,7 @@ import {
   Workflow,
 } from "lucide-react";
 
-import { CostCopilotDemo } from "@/components/CostCopilotDemo";
+import { CopilotChat } from "@/components/CopilotChat";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
@@ -174,11 +174,11 @@ function Index() {
           <p className="text-xs uppercase tracking-widest text-primary">Live demo</p>
           <h2 className="mt-3 text-3xl font-semibold">Ask it about any of our services</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            The question is sent to the copilot backend, which analyses the text, resolves the
-            OpenShift project, and returns a structured savings report.
+            Chat directly with OpenShift_MultiCluster_Supervisor. It starts a read-only dry-run
+            assessment, returns the run ID, and reports CPU and RAM savings per namespace.
           </p>
         </div>
-        <CostCopilotDemo />
+        <CopilotChat />
       </section>
 
       <section id="how" className="border-y border-border bg-surface/40 scroll-mt-16">
