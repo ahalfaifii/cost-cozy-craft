@@ -121,12 +121,16 @@ function Index() {
               OpenShift Cost Copilot
             </span>
           </div>
-          <a
-            href="#demo"
-            className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary"
-          >
-            See the demo
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href="#demo"
+              className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary"
+            >
+              See the demo
+            </a>
+            <ThemeToggle />
+          </div>
+
         </header>
 
         <section className="relative mx-auto max-w-6xl px-6 pb-20 pt-10 text-center">
