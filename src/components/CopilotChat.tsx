@@ -35,10 +35,14 @@ function explain(text: string): string {
   if (text.includes("IntegratedAuthenticationNotSupportedInChannel")) {
     return "The agent is set to Microsoft (integrated) authentication, which only works inside Teams. In Copilot Studio open Settings → Security → Authentication, switch to “No authentication” (or manual Entra auth), then publish again.";
   }
+  if (text.includes("AuthenticationNotConfigured")) {
+    return "The agent is set to “Authenticate manually” but no identity provider is filled in, so Copilot Studio rejects every turn. In Copilot Studio open Settings → Security → Authentication and pick “No authentication” (leaving nothing half-configured), save, then Publish again. If you must keep manual auth, complete the Entra ID app registration fields (client ID, secret, tenant, scopes) before publishing.";
+  }
   if (text.includes("LatestPublishedVersionNotFound")) {
     return "The agent has not been published yet. In Copilot Studio choose Publish, then retry here.";
   }
   return text;
+
 }
 
 export function CopilotChat() {
