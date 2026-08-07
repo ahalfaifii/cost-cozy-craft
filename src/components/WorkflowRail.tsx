@@ -15,7 +15,6 @@ export type WorkflowStep = {
 
 export function WorkflowRail({ steps }: { steps: WorkflowStep[] }) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const inView = useInView(sectionRef, { once: true, amount: 0.2 });
   const [active, setActive] = useState(0);
@@ -82,7 +81,6 @@ export function WorkflowRail({ steps }: { steps: WorkflowStep[] }) {
           className="hide-scrollbar cursor-grab overflow-x-auto overscroll-x-contain active:cursor-grabbing"
         >
           <motion.ol
-            ref={trackRef}
             drag="x"
             dragConstraints={viewportRef}
             dragElastic={0.04}
@@ -94,7 +92,7 @@ export function WorkflowRail({ steps }: { steps: WorkflowStep[] }) {
                 key={step.title}
                 data-card
                 initial={{ opacity: 0, y: 24 }}
-                animate={inView ? { opacity: 1, y: 0 } : undefined}
+                animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
                 transition={{ duration: 0.5, delay: index * 0.09, ease: "easeOut" }}
                 whileHover={{ y: -6 }}
                 className="w-[280px] shrink-0 sm:w-[320px]"

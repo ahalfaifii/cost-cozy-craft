@@ -177,3 +177,10 @@
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent 75%);
 }
+
+@utility hide-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
