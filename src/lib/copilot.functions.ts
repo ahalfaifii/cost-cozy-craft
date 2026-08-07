@@ -24,6 +24,7 @@ type DirectLineActivity = {
   from?: { id?: string; role?: string };
 };
 
+/** Server-only read of the Direct Line secret. Never returned to the client. */
 function readSecret() {
   return process.env["COPILOT_DIRECTLINE_SECRET"]?.trim();
 }
@@ -39,9 +40,10 @@ export const startCopilotConversation = createServerFn({ method: "POST" }).handl
         token: "",
         watermark: null,
         reason:
-          "The copilot connection is not configured yet. Add the Direct Line secret from Copilot Studio to connect this agent.",
+          "COPILOT_DIRECTLINE_SECRET is not configured. Add the Direct Line secret from Copilot Studio as a server-side secret to connect this agent.",
       };
     }
+
 
     const res = await fetch(`${DIRECT_LINE_BASE}/conversations`, {
       method: "POST",
