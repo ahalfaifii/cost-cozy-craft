@@ -15,8 +15,10 @@ import {
 
 import { CopilotChat } from "@/components/CopilotChat";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { WorkflowRail } from "@/components/WorkflowRail";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -192,26 +194,10 @@ function Index() {
             <p className="text-xs uppercase tracking-widest text-primary">The workflow</p>
             <h2 className="mt-3 text-3xl font-semibold">Five steps, fully automated in n8n</h2>
           </div>
-          <ol className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {PIPELINE.map((step, index) => (
-              <li key={step.title}>
-                <Card className="h-full border-border bg-surface p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-md border border-border bg-background p-2">
-                      <step.icon className="size-4 text-primary" aria-hidden="true" />
-                    </div>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      0{index + 1}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 text-base font-semibold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-                </Card>
-              </li>
-            ))}
-          </ol>
+          <WorkflowRail steps={PIPELINE} />
         </div>
       </section>
+
 
       <section className="mx-auto max-w-6xl px-6 py-20">
         <div className="mb-10 max-w-2xl">
