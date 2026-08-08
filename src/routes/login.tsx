@@ -42,12 +42,13 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
-  const router = useRouter();
   const login = useServerFn(loginPortalUser);
+  const diagnose = useServerFn(getPortalAuthDiagnostics);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [diag, setDiag] = useState<PortalAuthDiagnostics | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,16 +58,19 @@ function Login() {
       const result = await login({ data: { email: email.trim(), password } });
       if (result.ok) {
         setPassword("");
-        await router.navigate({ to: "/" });
+        // Full document load so the freshly issued HttpOnly session cookie is
+        // used for the protected route's server-side guard.
+        window.location.assign("/");
         return;
       }
       setError(result.message);
+      setPending(false);
     } catch {
       setError("Sign in could not be completed. Please try again.");
-    } finally {
       setPending(false);
     }
   }
+
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-12">
