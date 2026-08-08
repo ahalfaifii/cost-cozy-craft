@@ -260,7 +260,7 @@ function Index() {
         <div className="mb-8 max-w-2xl">
           <p className="text-xs uppercase tracking-widest text-primary">Cost optimization portal</p>
           <h2 className="mt-3 text-3xl font-semibold">
-            Everything the committee needs, in one view
+            Live optimization intelligence, unified
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             A read-only, advisory portal over the live Full Cycle optimization runs, the AI Council
