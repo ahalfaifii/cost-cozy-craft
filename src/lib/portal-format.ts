@@ -60,7 +60,8 @@ export function verdictTone(verdict: string): "positive" | "warning" | "review" 
   const value = verdict.toUpperCase();
   if (value === "APPROVE") return "positive";
   if (value === "APPROVE_WITH_WARNINGS") return "warning";
-  if (value.includes("HUMAN") || value.includes("REVIEW") || value.includes("REJECT")) return "review";
+  if (value.includes("HUMAN") || value.includes("REVIEW") || value.includes("REJECT"))
+    return "review";
   return "neutral";
 }
 
@@ -79,7 +80,8 @@ export function verdictClass(verdict: string): string {
 
 export function riskClass(risk: string): string {
   const value = risk.toUpperCase();
-  if (value === "SAFE" || value === "LOW_RISK") return "border-success/40 bg-success/10 text-success";
+  if (value === "SAFE" || value === "LOW_RISK")
+    return "border-success/40 bg-success/10 text-success";
   if (value === "MEDIUM_RISK") return "border-warning/40 bg-warning/10 text-warning";
   if (value === "HIGH_RISK") return "border-chart-3/50 bg-chart-3/15 text-chart-3";
   if (value === "CRITICAL_RISK") return "border-destructive/40 bg-destructive/10 text-destructive";

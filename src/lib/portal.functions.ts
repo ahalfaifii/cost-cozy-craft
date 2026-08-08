@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-
 /* ------------------------------------------------------------------ *
  * Types shared with the UI (plain DTOs only)
  * ------------------------------------------------------------------ */
@@ -75,9 +74,8 @@ export type PortalResult<T> = {
  * Server-only backend call
  * ------------------------------------------------------------------ */
 
-
-
-type BackendCall = { ok: true; body: unknown } | { ok: false; state: PortalConfigState; message: string };
+type BackendCall =
+  { ok: true; body: unknown } | { ok: false; state: PortalConfigState; message: string };
 
 async function callBackend(payload: Record<string, unknown>): Promise<BackendCall> {
   const url = process.env["PORTAL_BACKEND_URL"]?.trim();
@@ -131,7 +129,6 @@ async function callBackend(payload: Record<string, unknown>): Promise<BackendCal
     return { ok: false, state: "error", message: "The portal backend could not be reached." };
   }
 }
-
 
 /* ------------------------------------------------------------------ *
  * Lenient response normalisation
@@ -201,7 +198,8 @@ function list(source: Record<string, unknown>, keys: string[]): string[] {
 /** Strips any base64 payload; only a real URL is ever exposed. */
 function artifact(source: Record<string, unknown>): ReportArtifact {
   const raw = rec(pick(source, ["reportArtifact", "report", "artifact", "excelReport"]));
-  const url = str(raw, ["url", "link", "href", "downloadUrl"]) || str(source, ["reportUrl", "excelUrl"]);
+  const url =
+    str(raw, ["url", "link", "href", "downloadUrl"]) || str(source, ["reportUrl", "excelUrl"]);
   if (!/^https?:\/\//i.test(url)) return null;
   const filename = str(raw, ["filename", "name", "fileName"]);
   return filename ? { url, filename } : { url };
@@ -216,7 +214,13 @@ function toFullCycle(input: unknown): FullCycleReport {
     runId: str(merged, ["runId", "run_id", "runID"], "—"),
     controllerId: str(merged, ["controllerId", "controller_id", "controllerID"], "—"),
     status: str(merged, ["status", "state"], "UNKNOWN"),
-    terminalState: bool(merged, ["terminalState", "terminal", "isTerminal", "isComplete", "completed"]),
+    terminalState: bool(merged, [
+      "terminalState",
+      "terminal",
+      "isTerminal",
+      "isComplete",
+      "completed",
+    ]),
     currentPhase: str(merged, ["currentPhase", "phase", "currentStage"], "—"),
     completedStages: list(merged, ["completedStages", "completed_stages", "stages"]),
     aiCouncilVerdict: str(merged, ["aiCouncilVerdict", "councilVerdict", "verdict"], "—"),
@@ -235,7 +239,10 @@ function toFullCycle(input: unknown): FullCycleReport {
       "rawYearlySavingsSar",
       "rawYearlyOpportunitySar",
     ]),
-    executableMonthlySavingsSar: num(merged, ["executableMonthlySavingsSar", "executableMonthlySar"]),
+    executableMonthlySavingsSar: num(merged, [
+      "executableMonthlySavingsSar",
+      "executableMonthlySar",
+    ]),
     executableYearlySavingsSar: num(merged, ["executableYearlySavingsSar", "executableYearlySar"]),
     blockedOpportunityMonthlySavingsSar: num(merged, [
       "blockedOpportunityMonthlySavingsSar",
@@ -253,10 +260,20 @@ function toFullCycle(input: unknown): FullCycleReport {
     ]),
     warnings: list(merged, ["warnings", "warning"]),
     hardBlockers: list(merged, ["hardBlockers", "blockers"]),
-    approvedDeployments: list(merged, ["approvedDeployments", "approvedDeploymentKeys", "approved"]),
+    approvedDeployments: list(merged, [
+      "approvedDeployments",
+      "approvedDeploymentKeys",
+      "approved",
+    ]),
     blockedDeployments: list(merged, ["blockedDeployments", "blockedDeploymentKeys", "blocked"]),
     nextAction: str(merged, ["nextAction", "next_action", "recommendation"], "—"),
-    completedAt: str(merged, ["completedAt", "completedTime", "finishedAt", "updatedAt", "createdAt"]),
+    completedAt: str(merged, [
+      "completedAt",
+      "completedTime",
+      "finishedAt",
+      "updatedAt",
+      "createdAt",
+    ]),
     reportArtifact: artifact(merged),
   };
 }
@@ -279,12 +296,21 @@ function toResourceGuard(input: unknown): ResourceGuardReport {
     generatedAt: str(merged, ["generatedAt", "generatedTime", "createdAt", "updatedAt"]),
     monthlySavingsSar: num(merged, ["monthlySavingsSar", "monthlySavings"]),
     yearlySavingsSar: num(merged, ["yearlySavingsSar", "yearlySavings"]),
-    monthlyCostDeltaSar: num(merged, ["monthlyCostDeltaSar", "monthlyCostDelta", "monthlyIncreaseSar"]),
+    monthlyCostDeltaSar: num(merged, [
+      "monthlyCostDeltaSar",
+      "monthlyCostDelta",
+      "monthlyIncreaseSar",
+    ]),
     yearlyCostDeltaSar: num(merged, ["yearlyCostDeltaSar", "yearlyCostDelta", "yearlyIncreaseSar"]),
     resourceDiff: list(merged, ["resourceDiff", "diff"]),
     suggestedSaferValues: list(merged, ["suggestedSaferValues", "saferValues", "suggestions"]),
     historicalEvidence: list(merged, ["historicalEvidence", "evidence", "history"]),
-    councilFindings: list(merged, ["councilFindings", "aiCouncilFindings", "riskSources", "findings"]),
+    councilFindings: list(merged, [
+      "councilFindings",
+      "aiCouncilFindings",
+      "riskSources",
+      "findings",
+    ]),
     runtimeObservation: list(merged, ["runtimeObservation", "runtimeObservations", "observations"]),
     recommendation: str(merged, ["recommendation", "advice", "nextAction"], "—"),
     reportArtifact: artifact(merged),
@@ -312,7 +338,10 @@ function single(body: unknown, keys: string[]): unknown | null {
  * Requester session (authoritative, server-side cookie)
  * ------------------------------------------------------------------ */
 
-export type RequesterSession = { requesterEmail: string | null; requesterDisplayName: string | null };
+export type RequesterSession = {
+  requesterEmail: string | null;
+  requesterDisplayName: string | null;
+};
 
 export const getPortalRequester = createServerFn({ method: "GET" }).handler(
   async (): Promise<RequesterSession> => {
@@ -389,4 +418,3 @@ export const getLatestResourceGuardReports = createServerFn({ method: "POST" }).
     return { state: "ok", data: items.slice(0, 5).map(toResourceGuard) };
   },
 );
-

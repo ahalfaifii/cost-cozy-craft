@@ -157,7 +157,6 @@ export const startCopilotConversation = createServerFn({ method: "POST" }).handl
   },
 );
 
-
 const SendInput = z.object({
   conversationId: z.string().min(1),
   token: z.string().min(1),
@@ -187,7 +186,10 @@ export const sendCopilotMessage = createServerFn({ method: "POST" })
     );
 
     if (!res.ok) {
-      return { ok: false, error: `The copilot could not accept the message (status ${res.status}).` };
+      return {
+        ok: false,
+        error: `The copilot could not accept the message (status ${res.status}).`,
+      };
     }
     return { ok: true };
   });
@@ -227,7 +229,9 @@ export const pollCopilotActivities = createServerFn({ method: "POST" })
       };
 
       const activities: CopilotActivity[] = (body.activities ?? [])
-        .filter((activity) => activity.type === "message" && (activity.text ?? "").trim().length > 0)
+        .filter(
+          (activity) => activity.type === "message" && (activity.text ?? "").trim().length > 0,
+        )
         .map((activity, index) => {
           const text = (activity.text ?? "").trim();
           const controllerId = extractControllerId(

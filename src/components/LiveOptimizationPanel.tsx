@@ -35,7 +35,6 @@ import {
   type FullCycleReport,
 } from "@/lib/portal.functions";
 
-
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
@@ -69,10 +68,7 @@ function StageTracker({ report }: { report: FullCycleReport }) {
   const states = stageStates(report);
   return (
     <ol className="relative space-y-1">
-      <span
-        className="absolute left-[13px] top-2 bottom-2 w-px bg-border"
-        aria-hidden="true"
-      />
+      <span className="absolute left-[13px] top-2 bottom-2 w-px bg-border" aria-hidden="true" />
       {STAGES.map((stage, index) => {
         const state = states[index];
         return (
@@ -146,21 +142,38 @@ function ResultView({ report }: { report: FullCycleReport }) {
 
       {hasSavings ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Kpi label="Raw monthly opportunity" value={sar(report.rawOpportunityMonthlySavingsSar)} />
+          <Kpi
+            label="Raw monthly opportunity"
+            value={sar(report.rawOpportunityMonthlySavingsSar)}
+          />
           <Kpi label="Raw yearly opportunity" value={sar(report.rawOpportunityYearlySavingsSar)} />
-          <Kpi label="Executable monthly savings" value={sar(report.executableMonthlySavingsSar)} accent />
-          <Kpi label="Executable yearly savings" value={sar(report.executableYearlySavingsSar)} accent />
+          <Kpi
+            label="Executable monthly savings"
+            value={sar(report.executableMonthlySavingsSar)}
+            accent
+          />
+          <Kpi
+            label="Executable yearly savings"
+            value={sar(report.executableYearlySavingsSar)}
+            accent
+          />
         </div>
       ) : (
         <p className="rounded-lg border border-border bg-background p-3 text-sm text-muted-foreground">
-          No executable savings were identified for this run — the workloads are already sized within
-          policy.
+          No executable savings were identified for this run — the workloads are already sized
+          within policy.
         </p>
       )}
 
       <div className="grid gap-3 rounded-xl border border-border bg-background p-4 sm:grid-cols-2">
-        <Field label="Current monthly request cost" value={sar(report.currentMonthlyRequestCostSar)} />
-        <Field label="Target monthly request cost" value={sar(report.targetMonthlyRequestCostSar)} />
+        <Field
+          label="Current monthly request cost"
+          value={sar(report.currentMonthlyRequestCostSar)}
+        />
+        <Field
+          label="Target monthly request cost"
+          value={sar(report.targetMonthlyRequestCostSar)}
+        />
         <Field label="Service" value={report.service} />
         <Field label="Run ID" value={report.runId} />
         <Field label="Controller ID" value={report.controllerId} />
@@ -175,8 +188,10 @@ function ResultView({ report }: { report: FullCycleReport }) {
       {report.blockedOpportunityMonthlySavingsSar > 0 ? (
         <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
           <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
-          Opportunity blocked by safety controls —{" "}
-          {sar(report.blockedOpportunityMonthlySavingsSar)} per month held back.
+          Opportunity blocked by safety controls — {sar(
+            report.blockedOpportunityMonthlySavingsSar,
+          )}{" "}
+          per month held back.
         </p>
       ) : null}
 
@@ -284,7 +299,6 @@ export function LiveOptimizationPanel() {
       }
     : null;
 
-
   return (
     <Card className="flex flex-col gap-5 border-border bg-surface p-5 shadow-panel">
       <div className="flex items-start justify-between gap-3">
@@ -301,7 +315,10 @@ export function LiveOptimizationPanel() {
         </div>
         <div className="flex items-center gap-2">
           {report && report.status.toUpperCase() === "RUNNING" ? (
-            <Badge variant="outline" className="gap-1.5 border-primary/40 bg-primary/10 text-primary">
+            <Badge
+              variant="outline"
+              className="gap-1.5 border-primary/40 bg-primary/10 text-primary"
+            >
               <motion.span
                 animate={{ opacity: [1, 0.3, 1] }}
                 transition={{ duration: 1.2, repeat: Infinity }}
@@ -320,7 +337,6 @@ export function LiveOptimizationPanel() {
           Sign in to monitor your live optimization run.
         </p>
       ) : run.isPending ? (
-
         <div className="space-y-3">
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="h-24 w-full" />
@@ -348,10 +364,7 @@ export function LiveOptimizationPanel() {
             <Field label="Current phase" value={humanLabel(report.currentPhase)} />
             <Field label="AI Council verdict" value={report.aiCouncilVerdict} />
             <Field label="Scope coverage" value={report.scopeCoverage} />
-            <Field
-              label="Assessed clusters"
-              value={report.assessedClusters.join(", ") || "—"}
-            />
+            <Field label="Assessed clusters" value={report.assessedClusters.join(", ") || "—"} />
             <Field
               label="Unavailable clusters"
               value={report.unavailableClusters.join(", ") || "None"}
