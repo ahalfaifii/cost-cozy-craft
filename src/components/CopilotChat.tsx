@@ -55,9 +55,8 @@ export function CopilotChat() {
   const [input, setInput] = useState("");
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<FullCycleReport[]>([]);
   const [requesterEmail, setRequesterEmail] = useState<string | null>(null);
-  const [activeControllerId, setActiveControllerId] = useState<string | null>(null);
+
 
   const session = useRef<{ conversationId: string; token: string } | null>(null);
   const watermark = useRef<string | null>(null);
