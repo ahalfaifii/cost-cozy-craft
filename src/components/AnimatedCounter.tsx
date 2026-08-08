@@ -9,9 +9,9 @@ export function AnimatedCounter({
   className,
 }: {
   value: number;
-  format?: (value: number) => string;
-  duration?: number;
-  className?: string;
+  format?: ((value: number) => string) | undefined;
+  duration?: number | undefined;
+  className?: string | undefined;
 }) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const inView = useInView(ref, { once: true, amount: 0.4 });
