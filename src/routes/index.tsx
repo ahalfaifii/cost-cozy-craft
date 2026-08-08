@@ -30,9 +30,6 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getPortalSession, logoutPortalUser } from "@/lib/portal-auth.functions";
 
-
-
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -60,7 +57,6 @@ export const Route = createFileRoute("/")({
   loader: ({ context }) => ({ session: context.session }),
   component: Index,
 });
-
 
 const PIPELINE = [
   {
@@ -149,7 +145,6 @@ const BENEFITS = [
   },
 ];
 
-
 function Index() {
   const { session } = Route.useLoaderData();
   const router = useRouter();
@@ -164,7 +159,10 @@ function Index() {
   return (
     <main className="min-h-screen bg-background">
       <div className="relative overflow-hidden border-b border-border">
-        <div className="pointer-events-none absolute inset-0 grid-backdrop opacity-40" aria-hidden="true" />
+        <div
+          className="pointer-events-none absolute inset-0 grid-backdrop opacity-40"
+          aria-hidden="true"
+        />
         <header className="relative mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6">
           <div className="flex items-center gap-2">
             <div className="rounded-md border border-border bg-surface p-1.5">
@@ -198,8 +196,6 @@ function Index() {
               <LogOut className="size-4" aria-hidden="true" />
             </Button>
           </div>
-
-
         </header>
 
         <section className="relative mx-auto max-w-6xl px-6 pb-20 pt-10 text-center">
@@ -229,7 +225,6 @@ function Index() {
             >
               Open the portal
             </a>
-
           </div>
 
           <div className="mx-auto mt-10 flex max-w-2xl flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -245,7 +240,10 @@ function Index() {
 
           <dl className="mx-auto mt-14 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STATS.map((stat) => (
-              <div key={stat.label} className="rounded-xl border border-border bg-surface p-5 text-left">
+              <div
+                key={stat.label}
+                className="rounded-xl border border-border bg-surface p-5 text-left"
+              >
                 <dt className="font-display text-3xl font-semibold text-primary">{stat.value}</dt>
                 <dd className="mt-2 text-xs leading-relaxed text-muted-foreground">{stat.label}</dd>
               </div>
@@ -261,7 +259,9 @@ function Index() {
       <section id="demo" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-16">
         <div className="mb-8 max-w-2xl">
           <p className="text-xs uppercase tracking-widest text-primary">Cost optimization portal</p>
-          <h2 className="mt-3 text-3xl font-semibold">Everything the committee needs, in one view</h2>
+          <h2 className="mt-3 text-3xl font-semibold">
+            Everything the committee needs, in one view
+          </h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             A read-only, advisory portal over the live Full Cycle optimization runs, the AI Council
             verdicts and the Resource Guard reviews.
@@ -328,7 +328,6 @@ function Index() {
           </TabsContent>
         </Tabs>
       </section>
-
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-10 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">

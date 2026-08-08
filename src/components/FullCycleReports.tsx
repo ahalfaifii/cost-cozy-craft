@@ -14,13 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  humanLabel,
-  sar,
-  statusClass,
-  verdictClass,
-  whenLabel,
-} from "@/lib/portal-format";
+import { humanLabel, sar, statusClass, verdictClass, whenLabel } from "@/lib/portal-format";
 import { getLatestFullCycleReports, type FullCycleReport } from "@/lib/portal.functions";
 
 function DetailList({ title, items }: { title: string; items: string[] }) {
@@ -32,7 +26,10 @@ function DetailList({ title, items }: { title: string; items: string[] }) {
       ) : (
         <ul className="mt-1 space-y-1">
           {items.map((item) => (
-            <li key={item} className="rounded-md border border-border bg-background px-2 py-1 text-xs">
+            <li
+              key={item}
+              className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+            >
               {item}
             </li>
           ))}
@@ -141,7 +138,12 @@ export function FullCycleReports() {
               </dl>
 
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setSelected(report)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelected(report)}
+                >
                   Details
                 </Button>
                 {report.reportArtifact ? (

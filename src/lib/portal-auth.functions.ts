@@ -26,15 +26,13 @@ const LoginInput = z.object({
 });
 
 export type LoginResult =
-  | { ok: true; email: string; displayName: string }
-  | { ok: false; message: string };
+  { ok: true; email: string; displayName: string } | { ok: false; message: string };
 
 export const loginPortalUser = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => LoginInput.parse(input))
   .handler(async ({ data }): Promise<LoginResult> => {
-    const { verifyPortalCredentials, writePortalIdentity } = await import(
-      "./portal-session.server"
-    );
+    const { verifyPortalCredentials, writePortalIdentity } =
+      await import("./portal-session.server");
     const check = verifyPortalCredentials(data.email, data.password);
     if (!check.ok) {
       return {
@@ -74,7 +72,6 @@ export const getPortalAuthDiagnostics = createServerFn({ method: "GET" }).handle
     };
   },
 );
-
 
 export const logoutPortalUser = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ ok: true }> => {

@@ -27,7 +27,6 @@ import {
   type CopilotActivity,
 } from "@/lib/copilot.functions";
 
-
 const SUGGESTIONS = [
   "Can I save cost for Elmx?",
   "Why is Ertah overprovisioned?",
@@ -60,7 +59,6 @@ export function CopilotChat() {
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requesterEmail, setRequesterEmail] = useState<string | null>(null);
-
 
   const session = useRef<{ conversationId: string; token: string } | null>(null);
   const watermark = useRef<string | null>(null);
@@ -188,7 +186,6 @@ export function CopilotChat() {
 
   // Completed Full Cycle results are owned exclusively by LiveOptimizationPanel.
 
-
   return (
     <Card className="flex h-[620px] flex-col overflow-hidden border-border bg-surface shadow-panel">
       <div className="flex items-start gap-3 border-b border-border bg-gradient-to-r from-primary/10 via-surface to-surface px-5 py-4">
@@ -231,9 +228,6 @@ export function CopilotChat() {
               </MessageContent>
             </Message>
           ))}
-
-
-
 
           {waiting ? (
             <Message from="assistant">

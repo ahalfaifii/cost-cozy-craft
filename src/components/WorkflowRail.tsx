@@ -106,14 +106,10 @@ export function WorkflowRail({ steps }: { steps: WorkflowStep[] }) {
                     >
                       <step.icon className="size-4" aria-hidden="true" />
                     </motion.div>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      0{index + 1}
-                    </span>
+                    <span className="font-mono text-xs text-muted-foreground">0{index + 1}</span>
                   </div>
                   <h3 className="mt-4 text-base font-semibold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {step.body}
-                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
                   <span className="absolute inset-x-5 bottom-0 h-px origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
                 </div>
               </motion.li>

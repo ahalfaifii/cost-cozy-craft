@@ -6,8 +6,6 @@ import {
   useSession,
 } from "@tanstack/react-start/server";
 
-
-
 /** Safe identity kept in the signed, HttpOnly session cookie. */
 export type PortalSessionData = {
   email?: string;
@@ -54,7 +52,6 @@ function sessionConfig() {
   };
 }
 
-
 export function isSessionConfigured(): boolean {
   return Boolean(process.env["PORTAL_SESSION_SECRET"]?.trim());
 }
@@ -62,7 +59,6 @@ export function isSessionConfigured(): boolean {
 export function approvedUserCount(): number {
   return readApprovedUsers()?.length ?? 0;
 }
-
 
 /** Reads the authenticated identity, or null. Never throws for anonymous users. */
 export async function readPortalIdentity(): Promise<PortalIdentity | null> {

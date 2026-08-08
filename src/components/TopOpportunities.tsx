@@ -48,8 +48,8 @@ export function TopOpportunities() {
         </div>
       ) : opportunities.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          No completed assessments yet — the ranking fills in from live analysis as soon as the agent
-          finishes its first Full Cycle run.
+          No completed assessments yet — the ranking fills in from live analysis as soon as the
+          agent finishes its first Full Cycle run.
         </p>
       ) : (
         <ul className="space-y-2.5">

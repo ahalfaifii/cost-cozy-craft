@@ -1,7 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
-import { AlertTriangle, Check, FileSpreadsheet, Radio, ShieldAlert, TrendingDown } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  FileSpreadsheet,
+  Radio,
+  ShieldAlert,
+  TrendingDown,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AgentReasoning } from "@/components/AgentReasoning";

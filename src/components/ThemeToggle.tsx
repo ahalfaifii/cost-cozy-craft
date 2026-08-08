@@ -25,7 +25,6 @@ export function ThemeToggle() {
     setIsDark(dark);
   }, []);
 
-
   function toggle() {
     const next = !isDark;
     setIsDark(next);

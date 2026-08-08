@@ -15,7 +15,6 @@ import {
   type PortalAuthDiagnostics,
 } from "@/lib/portal-auth.functions";
 
-
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
@@ -71,10 +70,12 @@ function Login() {
     }
   }
 
-
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-12">
-      <div className="pointer-events-none absolute inset-0 grid-backdrop opacity-40" aria-hidden="true" />
+      <div
+        className="pointer-events-none absolute inset-0 grid-backdrop opacity-40"
+        aria-hidden="true"
+      />
       <div className="absolute right-6 top-6">
         <ThemeToggle />
       </div>
@@ -167,7 +168,6 @@ function Login() {
             </dl>
           ) : null}
         </div>
-
       </Card>
     </main>
   );
