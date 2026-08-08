@@ -1,7 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, FileSpreadsheet, Gauge, ServerCog } from "lucide-react";
-import { motion } from "motion/react";
+import { AlertTriangle, ServerCog } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -17,24 +16,15 @@ import {
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  FULL_CYCLE_COMPLETED_EVENT,
-  FULL_CYCLE_STARTED_EVENT,
-  humanLabel,
-  sar,
-  serviceFromControllerId,
-  verdictClass,
-} from "@/lib/portal-format";
-import type { FullCycleReport } from "@/lib/portal.functions";
+import { FULL_CYCLE_STARTED_EVENT, serviceFromControllerId } from "@/lib/portal-format";
 import {
   pollCopilotActivities,
   sendCopilotMessage,
   startCopilotConversation,
   type CopilotActivity,
 } from "@/lib/copilot.functions";
+
 
 const SUGGESTIONS = [
   "how much can we save for nafath?",
