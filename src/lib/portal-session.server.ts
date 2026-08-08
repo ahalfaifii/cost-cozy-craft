@@ -15,26 +15,39 @@ export type PortalIdentity = {
   authenticated: true;
 };
 
+function isHttps(): boolean {
+  try {
+    const forwarded = getRequestHeader("x-forwarded-proto");
+    if (forwarded) return forwarded.split(",")[0]?.trim() === "https";
+    return getRequestUrl().protocol === "https:";
+  } catch {
+    return true;
+  }
+}
+
 function sessionConfig() {
   const password = process.env["PORTAL_SESSION_SECRET"]?.trim();
   if (!password) {
     throw new Error("PORTAL_SESSION_SECRET is not configured.");
   }
+  // Over HTTPS the portal can be rendered inside an embedded preview frame — a
+  // cross-site context where SameSite=Lax cookies are dropped — so the session
+  // cookie must be None + Secure there. Plain-HTTP local dev cannot send
+  // Secure cookies, so it falls back to Lax.
+  const https = isHttps();
   return {
     password,
     name: "portal-session",
     maxAge: 60 * 60 * 12,
     cookie: {
       httpOnly: true,
-      // The portal is rendered inside an embedded preview frame, which is a
-      // cross-site context: SameSite=Lax cookies are dropped there, so the
-      // session must be None + Secure to persist after login.
-      sameSite: "none" as const,
-      secure: true,
+      sameSite: https ? ("none" as const) : ("lax" as const),
+      secure: https,
       path: "/",
     },
   };
 }
+
 
 export function isSessionConfigured(): boolean {
   return Boolean(process.env["PORTAL_SESSION_SECRET"]?.trim());
