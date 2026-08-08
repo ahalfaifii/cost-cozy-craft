@@ -106,3 +106,56 @@ export function humanLabel(value: string): string {
 
 /** Event name used to hand a completed Full Cycle result to the chat panel. */
 export const FULL_CYCLE_COMPLETED_EVENT = "portal:full-cycle-completed";
+
+/** Event name used to announce a newly started Full Cycle controller. */
+export const FULL_CYCLE_STARTED_EVENT = "full-cycle-started";
+
+const CONTROLLER_KEYS = ["controllerId", "controller_id", "controllerID"];
+
+/** Deep-scans a structured Direct Line payload for a controller id. */
+export function findControllerIdInValue(input: unknown, depth = 0): string {
+  if (!input || depth > 6) return "";
+  if (Array.isArray(input)) {
+    for (const item of input) {
+      const found = findControllerIdInValue(item, depth + 1);
+      if (found) return found;
+    }
+    return "";
+  }
+  if (typeof input !== "object") return "";
+  const record = input as Record<string, unknown>;
+  for (const key of CONTROLLER_KEYS) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  for (const value of Object.values(record)) {
+    const found = findControllerIdInValue(value, depth + 1);
+    if (found) return found;
+  }
+  return "";
+}
+
+/** Text fallback: only used when the copilot exposes the response as plain text. */
+export function findControllerIdInText(text: string): string {
+  if (!text) return "";
+  const labelled = text.match(/controller\s*id\s*[:=]?\s*[`"']?([A-Za-z0-9._:-]{6,200})/i);
+  if (labelled?.[1]) return labelled[1].replace(/[.,`"')\]]+$/, "");
+  const bare = text.match(/\bfull-cycle-[A-Za-z0-9._:-]{3,190}\b/i);
+  return bare?.[0]?.replace(/[.,`"')\]]+$/, "") ?? "";
+}
+
+export function extractControllerId(value: unknown, text: string): string {
+  return findControllerIdInValue(value) || findControllerIdInText(text);
+}
+
+/** Terminal detection tolerant of the backend's different completion signals. */
+export function isReportTerminal(report: {
+  status: string;
+  terminalState?: boolean;
+  completedStages: string[];
+}): boolean {
+  if (report.terminalState === true) return true;
+  if (report.completedStages.some((stage) => stage.trim().toUpperCase() === "FINAL_STATE_STORED"))
+    return true;
+  return isTerminal(report.status);
+}
