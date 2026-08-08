@@ -20,7 +20,13 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FULL_CYCLE_COMPLETED_EVENT, humanLabel, sar, verdictClass } from "@/lib/portal-format";
+import {
+  FULL_CYCLE_COMPLETED_EVENT,
+  FULL_CYCLE_STARTED_EVENT,
+  humanLabel,
+  sar,
+  verdictClass,
+} from "@/lib/portal-format";
 import type { FullCycleReport } from "@/lib/portal.functions";
 import {
   pollCopilotActivities,
@@ -67,6 +73,7 @@ export function CopilotChat() {
   const session = useRef<{ conversationId: string; token: string } | null>(null);
   const watermark = useRef<string | null>(null);
   const seen = useRef(new Set<string>());
+  const announcedControllers = useRef(new Set<string>());
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const connect = useMutation({
@@ -110,6 +117,17 @@ export function CopilotChat() {
     fresh.forEach((activity) => seen.current.add(activity.id));
     setMessages((previous) => [...previous, ...fresh]);
     if (fresh.some((activity) => activity.from === "bot")) setWaiting(false);
+
+    // Latch a newly started Full Cycle controller and hand it to the live monitor.
+    for (const activity of fresh) {
+      if (activity.from !== "bot") continue;
+      const controllerId = activity.controllerId;
+      if (!controllerId || announcedControllers.current.has(controllerId)) continue;
+      announcedControllers.current.add(controllerId);
+      window.dispatchEvent(
+        new CustomEvent(FULL_CYCLE_STARTED_EVENT, { detail: { controllerId } }),
+      );
+    }
   }, [poll]);
 
   useEffect(() => {
@@ -246,6 +264,18 @@ export function CopilotChat() {
                   <div>
                     <dt className="text-muted-foreground">AI Council verdict</dt>
                     <dd className="mt-0.5 font-mono">{report.aiCouncilVerdict}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Raw monthly opportunity</dt>
+                    <dd className="mt-0.5 font-mono tabular-nums">
+                      {sar(report.rawOpportunityMonthlySavingsSar)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Raw yearly opportunity</dt>
+                    <dd className="mt-0.5 font-mono tabular-nums">
+                      {sar(report.rawOpportunityYearlySavingsSar)}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Executable monthly savings</dt>
