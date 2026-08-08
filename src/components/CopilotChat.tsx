@@ -252,7 +252,11 @@ export function CopilotChat() {
             </Message>
           ))}
 
-          {results.map((report) => (
+          {results
+            .filter(
+              (report) => !activeControllerId || report.controllerId === activeControllerId,
+            )
+            .map((report) => (
             <motion.div
               key={report.controllerId || report.runId}
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -330,7 +334,7 @@ export function CopilotChat() {
                 ) : null}
               </Card>
             </motion.div>
-          ))}
+            ))}
 
           {waiting ? (
             <Message from="assistant">
