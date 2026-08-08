@@ -209,7 +209,7 @@ function artifact(source: Record<string, unknown>): ReportArtifact {
 
 function toFullCycle(input: unknown): FullCycleReport {
   const s = rec(input);
-  const savings = rec(pick(s, ["savings", "costs", "financials"]));
+  const savings = rec(pick(s, ["financialSummary", "savings", "costs", "financials"]));
   const merged = { ...savings, ...s };
   return {
     service: str(merged, ["service", "serviceName", "app"], "—"),
@@ -241,12 +241,20 @@ function toFullCycle(input: unknown): FullCycleReport {
       "blockedOpportunityMonthlySavingsSar",
       "blockedMonthlySavingsSar",
     ]),
-    currentMonthlyRequestCostSar: num(merged, ["currentMonthlyRequestCostSar", "currentMonthlyCostSar"]),
-    targetMonthlyRequestCostSar: num(merged, ["targetMonthlyRequestCostSar", "targetMonthlyCostSar"]),
+    currentMonthlyRequestCostSar: num(merged, [
+      "currentMonthlyRequestCostSar",
+      "currentMonthlyCostSar",
+      "assessmentCurrentMonthlySar",
+    ]),
+    targetMonthlyRequestCostSar: num(merged, [
+      "targetMonthlyRequestCostSar",
+      "targetMonthlyCostSar",
+      "assessmentTargetMonthlySar",
+    ]),
     warnings: list(merged, ["warnings", "warning"]),
     hardBlockers: list(merged, ["hardBlockers", "blockers"]),
-    approvedDeployments: list(merged, ["approvedDeployments", "approved"]),
-    blockedDeployments: list(merged, ["blockedDeployments", "blocked"]),
+    approvedDeployments: list(merged, ["approvedDeployments", "approvedDeploymentKeys", "approved"]),
+    blockedDeployments: list(merged, ["blockedDeployments", "blockedDeploymentKeys", "blocked"]),
     nextAction: str(merged, ["nextAction", "next_action", "recommendation"], "—"),
     completedAt: str(merged, ["completedAt", "completedTime", "finishedAt", "updatedAt", "createdAt"]),
     reportArtifact: artifact(merged),
@@ -288,7 +296,7 @@ function collection(body: unknown, keys: string[]): unknown[] {
   if (!parsed.success) return [];
   if (Array.isArray(parsed.data)) return parsed.data;
   const root = parsed.data;
-  const found = pick(root, [...keys, "items", "data", "results", "records", "rows"]);
+  const found = pick(root, [...keys, "report", "items", "data", "results", "records", "rows"]);
   if (Array.isArray(found)) return found;
   const nested = rec(found);
   if (Object.keys(nested).length > 0) return [nested];
@@ -350,7 +358,7 @@ export const getLiveFullCycle = createServerFn({ method: "POST" }).handler(
     const result = await callBackend({ action: "live-full-cycle", requesterEmail });
     if (!result.ok)
       return { state: result.state, message: result.message, data: null, requesterEmail };
-    const item = single(result.body, ["fullCycle", "controller", "run"]);
+    const item = single(result.body, ["report", "fullCycle", "controller", "run"]);
     return { state: "ok", data: item ? toFullCycle(item) : null, requesterEmail };
   },
 );
@@ -367,7 +375,7 @@ export const getFullCycleByController = createServerFn({ method: "POST" })
       controllerId: data.controllerId,
     });
     if (!result.ok) return { state: result.state, message: result.message, data: null };
-    const item = single(result.body, ["fullCycle", "controller", "run"]);
+    const item = single(result.body, ["report", "fullCycle", "controller", "run"]);
     return { state: "ok", data: item ? toFullCycle(item) : null };
   });
 
