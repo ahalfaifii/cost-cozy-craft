@@ -25,12 +25,24 @@ function sessionConfig() {
     maxAge: 60 * 60 * 12,
     cookie: {
       httpOnly: true,
-      sameSite: "lax" as const,
-      secure: process.env["NODE_ENV"] !== "development",
+      // The portal is rendered inside an embedded preview frame, which is a
+      // cross-site context: SameSite=Lax cookies are dropped there, so the
+      // session must be None + Secure to persist after login.
+      sameSite: "none" as const,
+      secure: true,
       path: "/",
     },
   };
 }
+
+export function isSessionConfigured(): boolean {
+  return Boolean(process.env["PORTAL_SESSION_SECRET"]?.trim());
+}
+
+export function approvedUserCount(): number {
+  return readApprovedUsers()?.length ?? 0;
+}
+
 
 /** Reads the authenticated identity, or null. Never throws for anonymous users. */
 export async function readPortalIdentity(): Promise<PortalIdentity | null> {
