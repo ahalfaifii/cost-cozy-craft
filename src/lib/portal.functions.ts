@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
+
 
 /* ------------------------------------------------------------------ *
  * Types shared with the UI (plain DTOs only)
@@ -351,6 +351,8 @@ const ControllerInput = z.object({ controllerId: z.string().trim().min(1).max(20
 export const getFullCycleByController = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ControllerInput.parse(input))
   .handler(async ({ data }): Promise<PortalResult<FullCycleReport | null>> => {
+    const { requirePortalIdentity } = await import("./portal-session.server");
+    await requirePortalIdentity();
     const result = await callBackend({
       action: "full-cycle-by-controller",
       controllerId: data.controllerId,
@@ -362,9 +364,12 @@ export const getFullCycleByController = createServerFn({ method: "POST" })
 
 export const getLatestResourceGuardReports = createServerFn({ method: "POST" }).handler(
   async (): Promise<PortalResult<ResourceGuardReport[]>> => {
+    const { requirePortalIdentity } = await import("./portal-session.server");
+    await requirePortalIdentity();
     const result = await callBackend({ action: "latest-resource-guards", limit: 5 });
     if (!result.ok) return { state: result.state, message: result.message, data: [] };
     const items = collection(result.body, ["resourceGuards", "reports", "guardReports"]);
     return { state: "ok", data: items.slice(0, 5).map(toResourceGuard) };
   },
 );
+
