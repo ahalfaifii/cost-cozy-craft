@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-
 /* ------------------------------------------------------------------ *
  * Types shared with the UI (plain DTOs only)
  * ------------------------------------------------------------------ */
@@ -15,6 +14,7 @@ export type FullCycleReport = {
   runId: string;
   controllerId: string;
   status: string;
+  terminalState: boolean;
   currentPhase: string;
   completedStages: string[];
   aiCouncilVerdict: string;
@@ -74,9 +74,8 @@ export type PortalResult<T> = {
  * Server-only backend call
  * ------------------------------------------------------------------ */
 
-
-
-type BackendCall = { ok: true; body: unknown } | { ok: false; state: PortalConfigState; message: string };
+type BackendCall =
+  { ok: true; body: unknown } | { ok: false; state: PortalConfigState; message: string };
 
 async function callBackend(payload: Record<string, unknown>): Promise<BackendCall> {
   const url = process.env["PORTAL_BACKEND_URL"]?.trim();
@@ -131,7 +130,6 @@ async function callBackend(payload: Record<string, unknown>): Promise<BackendCal
   }
 }
 
-
 /* ------------------------------------------------------------------ *
  * Lenient response normalisation
  * ------------------------------------------------------------------ */
@@ -165,6 +163,13 @@ function num(source: Record<string, unknown>, keys: string[]): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function bool(source: Record<string, unknown>, keys: string[]): boolean {
+  const value = pick(source, keys);
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim().toLowerCase() === "true";
+  return false;
+}
+
 function list(source: Record<string, unknown>, keys: string[]): string[] {
   const value = pick(source, keys);
   if (Array.isArray(value)) {
@@ -193,7 +198,8 @@ function list(source: Record<string, unknown>, keys: string[]): string[] {
 /** Strips any base64 payload; only a real URL is ever exposed. */
 function artifact(source: Record<string, unknown>): ReportArtifact {
   const raw = rec(pick(source, ["reportArtifact", "report", "artifact", "excelReport"]));
-  const url = str(raw, ["url", "link", "href", "downloadUrl"]) || str(source, ["reportUrl", "excelUrl"]);
+  const url =
+    str(raw, ["url", "link", "href", "downloadUrl"]) || str(source, ["reportUrl", "excelUrl"]);
   if (!/^https?:\/\//i.test(url)) return null;
   const filename = str(raw, ["filename", "name", "fileName"]);
   return filename ? { url, filename } : { url };
@@ -201,13 +207,20 @@ function artifact(source: Record<string, unknown>): ReportArtifact {
 
 function toFullCycle(input: unknown): FullCycleReport {
   const s = rec(input);
-  const savings = rec(pick(s, ["savings", "costs", "financials"]));
+  const savings = rec(pick(s, ["financialSummary", "savings", "costs", "financials"]));
   const merged = { ...savings, ...s };
   return {
     service: str(merged, ["service", "serviceName", "app"], "—"),
     runId: str(merged, ["runId", "run_id", "runID"], "—"),
     controllerId: str(merged, ["controllerId", "controller_id", "controllerID"], "—"),
     status: str(merged, ["status", "state"], "UNKNOWN"),
+    terminalState: bool(merged, [
+      "terminalState",
+      "terminal",
+      "isTerminal",
+      "isComplete",
+      "completed",
+    ]),
     currentPhase: str(merged, ["currentPhase", "phase", "currentStage"], "—"),
     completedStages: list(merged, ["completedStages", "completed_stages", "stages"]),
     aiCouncilVerdict: str(merged, ["aiCouncilVerdict", "councilVerdict", "verdict"], "—"),
@@ -226,20 +239,41 @@ function toFullCycle(input: unknown): FullCycleReport {
       "rawYearlySavingsSar",
       "rawYearlyOpportunitySar",
     ]),
-    executableMonthlySavingsSar: num(merged, ["executableMonthlySavingsSar", "executableMonthlySar"]),
+    executableMonthlySavingsSar: num(merged, [
+      "executableMonthlySavingsSar",
+      "executableMonthlySar",
+    ]),
     executableYearlySavingsSar: num(merged, ["executableYearlySavingsSar", "executableYearlySar"]),
     blockedOpportunityMonthlySavingsSar: num(merged, [
       "blockedOpportunityMonthlySavingsSar",
       "blockedMonthlySavingsSar",
     ]),
-    currentMonthlyRequestCostSar: num(merged, ["currentMonthlyRequestCostSar", "currentMonthlyCostSar"]),
-    targetMonthlyRequestCostSar: num(merged, ["targetMonthlyRequestCostSar", "targetMonthlyCostSar"]),
+    currentMonthlyRequestCostSar: num(merged, [
+      "currentMonthlyRequestCostSar",
+      "currentMonthlyCostSar",
+      "assessmentCurrentMonthlySar",
+    ]),
+    targetMonthlyRequestCostSar: num(merged, [
+      "targetMonthlyRequestCostSar",
+      "targetMonthlyCostSar",
+      "assessmentTargetMonthlySar",
+    ]),
     warnings: list(merged, ["warnings", "warning"]),
     hardBlockers: list(merged, ["hardBlockers", "blockers"]),
-    approvedDeployments: list(merged, ["approvedDeployments", "approved"]),
-    blockedDeployments: list(merged, ["blockedDeployments", "blocked"]),
+    approvedDeployments: list(merged, [
+      "approvedDeployments",
+      "approvedDeploymentKeys",
+      "approved",
+    ]),
+    blockedDeployments: list(merged, ["blockedDeployments", "blockedDeploymentKeys", "blocked"]),
     nextAction: str(merged, ["nextAction", "next_action", "recommendation"], "—"),
-    completedAt: str(merged, ["completedAt", "completedTime", "finishedAt", "updatedAt", "createdAt"]),
+    completedAt: str(merged, [
+      "completedAt",
+      "completedTime",
+      "finishedAt",
+      "updatedAt",
+      "createdAt",
+    ]),
     reportArtifact: artifact(merged),
   };
 }
@@ -262,12 +296,21 @@ function toResourceGuard(input: unknown): ResourceGuardReport {
     generatedAt: str(merged, ["generatedAt", "generatedTime", "createdAt", "updatedAt"]),
     monthlySavingsSar: num(merged, ["monthlySavingsSar", "monthlySavings"]),
     yearlySavingsSar: num(merged, ["yearlySavingsSar", "yearlySavings"]),
-    monthlyCostDeltaSar: num(merged, ["monthlyCostDeltaSar", "monthlyCostDelta", "monthlyIncreaseSar"]),
+    monthlyCostDeltaSar: num(merged, [
+      "monthlyCostDeltaSar",
+      "monthlyCostDelta",
+      "monthlyIncreaseSar",
+    ]),
     yearlyCostDeltaSar: num(merged, ["yearlyCostDeltaSar", "yearlyCostDelta", "yearlyIncreaseSar"]),
     resourceDiff: list(merged, ["resourceDiff", "diff"]),
     suggestedSaferValues: list(merged, ["suggestedSaferValues", "saferValues", "suggestions"]),
     historicalEvidence: list(merged, ["historicalEvidence", "evidence", "history"]),
-    councilFindings: list(merged, ["councilFindings", "aiCouncilFindings", "riskSources", "findings"]),
+    councilFindings: list(merged, [
+      "councilFindings",
+      "aiCouncilFindings",
+      "riskSources",
+      "findings",
+    ]),
     runtimeObservation: list(merged, ["runtimeObservation", "runtimeObservations", "observations"]),
     recommendation: str(merged, ["recommendation", "advice", "nextAction"], "—"),
     reportArtifact: artifact(merged),
@@ -279,7 +322,7 @@ function collection(body: unknown, keys: string[]): unknown[] {
   if (!parsed.success) return [];
   if (Array.isArray(parsed.data)) return parsed.data;
   const root = parsed.data;
-  const found = pick(root, [...keys, "items", "data", "results", "records", "rows"]);
+  const found = pick(root, [...keys, "report", "items", "data", "results", "records", "rows"]);
   if (Array.isArray(found)) return found;
   const nested = rec(found);
   if (Object.keys(nested).length > 0) return [nested];
@@ -295,7 +338,10 @@ function single(body: unknown, keys: string[]): unknown | null {
  * Requester session (authoritative, server-side cookie)
  * ------------------------------------------------------------------ */
 
-export type RequesterSession = { requesterEmail: string | null; requesterDisplayName: string | null };
+export type RequesterSession = {
+  requesterEmail: string | null;
+  requesterDisplayName: string | null;
+};
 
 export const getPortalRequester = createServerFn({ method: "GET" }).handler(
   async (): Promise<RequesterSession> => {
@@ -341,7 +387,7 @@ export const getLiveFullCycle = createServerFn({ method: "POST" }).handler(
     const result = await callBackend({ action: "live-full-cycle", requesterEmail });
     if (!result.ok)
       return { state: result.state, message: result.message, data: null, requesterEmail };
-    const item = single(result.body, ["fullCycle", "controller", "run"]);
+    const item = single(result.body, ["report", "fullCycle", "controller", "run"]);
     return { state: "ok", data: item ? toFullCycle(item) : null, requesterEmail };
   },
 );
@@ -358,7 +404,7 @@ export const getFullCycleByController = createServerFn({ method: "POST" })
       controllerId: data.controllerId,
     });
     if (!result.ok) return { state: result.state, message: result.message, data: null };
-    const item = single(result.body, ["fullCycle", "controller", "run"]);
+    const item = single(result.body, ["report", "fullCycle", "controller", "run"]);
     return { state: "ok", data: item ? toFullCycle(item) : null };
   });
 
@@ -372,4 +418,3 @@ export const getLatestResourceGuardReports = createServerFn({ method: "POST" }).
     return { state: "ok", data: items.slice(0, 5).map(toResourceGuard) };
   },
 );
-

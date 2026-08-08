@@ -1,12 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { extractControllerId } from "./portal-format";
+
 const DIRECT_LINE_BASE = "https://directline.botframework.com/v3/directline";
 
 export type CopilotActivity = {
   id: string;
   from: "user" | "bot";
   text: string;
+  /** Controller id latched from structured fields when the agent exposes them. */
+  controllerId?: string;
 };
 
 export type CopilotSession = {
@@ -32,6 +36,8 @@ type DirectLineActivity = {
   type?: string;
   text?: string;
   from?: { id?: string; role?: string };
+  value?: unknown;
+  channelData?: unknown;
 };
 
 /** Server-only read of the Direct Line secret. Never returned to the client. */
@@ -151,7 +157,6 @@ export const startCopilotConversation = createServerFn({ method: "POST" }).handl
   },
 );
 
-
 const SendInput = z.object({
   conversationId: z.string().min(1),
   token: z.string().min(1),
@@ -181,7 +186,10 @@ export const sendCopilotMessage = createServerFn({ method: "POST" })
     );
 
     if (!res.ok) {
-      return { ok: false, error: `The copilot could not accept the message (status ${res.status}).` };
+      return {
+        ok: false,
+        error: `The copilot could not accept the message (status ${res.status}).`,
+      };
     }
     return { ok: true };
   });
@@ -221,12 +229,22 @@ export const pollCopilotActivities = createServerFn({ method: "POST" })
       };
 
       const activities: CopilotActivity[] = (body.activities ?? [])
-        .filter((activity) => activity.type === "message" && (activity.text ?? "").trim().length > 0)
-        .map((activity, index) => ({
-          id: activity.id ?? `${data.conversationId}-${index}`,
-          from: activity.from?.id === "web-user" ? ("user" as const) : ("bot" as const),
-          text: (activity.text ?? "").trim(),
-        }));
+        .filter(
+          (activity) => activity.type === "message" && (activity.text ?? "").trim().length > 0,
+        )
+        .map((activity, index) => {
+          const text = (activity.text ?? "").trim();
+          const controllerId = extractControllerId(
+            { value: activity.value, channelData: activity.channelData },
+            text,
+          );
+          return {
+            id: activity.id ?? `${data.conversationId}-${index}`,
+            from: activity.from?.id === "web-user" ? ("user" as const) : ("bot" as const),
+            text,
+            ...(controllerId ? { controllerId } : {}),
+          };
+        });
 
       return { activities, watermark: body.watermark ?? data.watermark };
     },

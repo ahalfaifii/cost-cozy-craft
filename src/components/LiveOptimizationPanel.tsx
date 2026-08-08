@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
 import {
@@ -11,7 +11,7 @@ import {
   TrendingDown,
   X,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,9 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FULL_CYCLE_COMPLETED_EVENT,
+  FULL_CYCLE_STARTED_EVENT,
   STAGES,
-  isTerminal,
+  isReportTerminal,
   humanLabel,
   sar,
   stageStates,
@@ -28,11 +29,11 @@ import {
   verdictClass,
 } from "@/lib/portal-format";
 import {
+  getFullCycleByController,
   getLiveFullCycle,
   getPortalRequester,
   type FullCycleReport,
 } from "@/lib/portal.functions";
-
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -67,10 +68,7 @@ function StageTracker({ report }: { report: FullCycleReport }) {
   const states = stageStates(report);
   return (
     <ol className="relative space-y-1">
-      <span
-        className="absolute left-[13px] top-2 bottom-2 w-px bg-border"
-        aria-hidden="true"
-      />
+      <span className="absolute left-[13px] top-2 bottom-2 w-px bg-border" aria-hidden="true" />
       {STAGES.map((stage, index) => {
         const state = states[index];
         return (
@@ -144,21 +142,43 @@ function ResultView({ report }: { report: FullCycleReport }) {
 
       {hasSavings ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Kpi label="Raw monthly opportunity" value={sar(report.rawOpportunityMonthlySavingsSar)} />
+          <Kpi
+            label="Raw monthly opportunity"
+            value={sar(report.rawOpportunityMonthlySavingsSar)}
+          />
           <Kpi label="Raw yearly opportunity" value={sar(report.rawOpportunityYearlySavingsSar)} />
-          <Kpi label="Executable monthly savings" value={sar(report.executableMonthlySavingsSar)} accent />
-          <Kpi label="Executable yearly savings" value={sar(report.executableYearlySavingsSar)} accent />
+          <Kpi
+            label="Executable monthly savings"
+            value={sar(report.executableMonthlySavingsSar)}
+            accent
+          />
+          <Kpi
+            label="Executable yearly savings"
+            value={sar(report.executableYearlySavingsSar)}
+            accent
+          />
         </div>
       ) : (
         <p className="rounded-lg border border-border bg-background p-3 text-sm text-muted-foreground">
-          No executable savings were identified for this run — the workloads are already sized within
-          policy.
+          No executable savings were identified for this run — the workloads are already sized
+          within policy.
         </p>
       )}
 
       <div className="grid gap-3 rounded-xl border border-border bg-background p-4 sm:grid-cols-2">
-        <Field label="Current monthly request cost" value={sar(report.currentMonthlyRequestCostSar)} />
-        <Field label="Target monthly request cost" value={sar(report.targetMonthlyRequestCostSar)} />
+        <Field
+          label="Current monthly request cost"
+          value={sar(report.currentMonthlyRequestCostSar)}
+        />
+        <Field
+          label="Target monthly request cost"
+          value={sar(report.targetMonthlyRequestCostSar)}
+        />
+        <Field label="Service" value={report.service} />
+        <Field label="Run ID" value={report.runId} />
+        <Field label="Controller ID" value={report.controllerId} />
+        <Field label="Current phase" value={humanLabel(report.currentPhase)} />
+        <Field label="Completed stages" value={report.completedStages.join(", ") || "—"} />
         <Field label="Approved deployments" value={String(report.approvedDeploymentCount)} />
         <Field label="Blocked deployments" value={String(report.blockedDeploymentCount)} />
         <Field label="AI Council verdict" value={report.aiCouncilVerdict} />
@@ -168,8 +188,10 @@ function ResultView({ report }: { report: FullCycleReport }) {
       {report.blockedOpportunityMonthlySavingsSar > 0 ? (
         <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
           <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
-          Opportunity blocked by safety controls —{" "}
-          {sar(report.blockedOpportunityMonthlySavingsSar)} per month held back.
+          Opportunity blocked by safety controls — {sar(
+            report.blockedOpportunityMonthlySavingsSar,
+          )}{" "}
+          per month held back.
         </p>
       ) : null}
 
@@ -192,7 +214,12 @@ function ResultView({ report }: { report: FullCycleReport }) {
 
 export function LiveOptimizationPanel() {
   const live = useServerFn(getLiveFullCycle);
+  const byController = useServerFn(getFullCycleByController);
   const requester = useServerFn(getPortalRequester);
+  const queryClient = useQueryClient();
+
+  const [controllerId, setControllerId] = useState<string | null>(null);
+  const [completedDetected, setCompletedDetected] = useState(false);
 
   const session = useQuery({
     queryKey: ["portal-requester"],
@@ -202,23 +229,75 @@ export function LiveOptimizationPanel() {
 
   const authed = Boolean(session.data?.requesterEmail);
 
-  const run = useQuery({
+  // Latch the controller id announced by the chat as soon as a Full Cycle starts.
+  useEffect(() => {
+    function onStarted(event: Event) {
+      const detail = (event as CustomEvent<{ controllerId?: string }>).detail;
+      const next = detail?.controllerId?.trim();
+      if (!next) return;
+      setControllerId((previous) => {
+        if (previous === next) return previous;
+        setCompletedDetected(false);
+        return next;
+      });
+    }
+    window.addEventListener(FULL_CYCLE_STARTED_EVENT, onStarted);
+    return () => window.removeEventListener(FULL_CYCLE_STARTED_EVENT, onStarted);
+  }, []);
+
+  // Discovery: keeps looking for the latest controller of the authenticated requester.
+  const discovery = useQuery({
     queryKey: ["portal-live-full-cycle"],
     queryFn: () => live(),
     enabled: authed,
     refetchInterval: authed ? 5000 : false,
   });
 
-  const announced = useRef(new Set<string>());
-  const report = run.data?.data ?? null;
+  const discovered = discovery.data?.data ?? null;
 
   useEffect(() => {
-    if (!report || !isTerminal(report.status)) return;
+    const found = discovered?.controllerId;
+    if (!controllerId && found && found !== "—") setControllerId(found);
+  }, [controllerId, discovered?.controllerId]);
+
+  // Controller poll: authoritative once a controller id is known.
+  const controllerRun = useQuery({
+    queryKey: ["portal-full-cycle-controller", controllerId],
+    queryFn: () => byController({ data: { controllerId: controllerId as string } }),
+    enabled: authed && Boolean(controllerId),
+    refetchInterval: authed && controllerId && !completedDetected ? 5000 : false,
+  });
+
+  const run = controllerId ? controllerRun : discovery;
+  const report = (controllerRun.data?.data ?? null) || (controllerId ? null : discovered);
+  const pollRunning = Boolean(authed && controllerId && !completedDetected);
+
+  const announced = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (!report || !isReportTerminal(report)) return;
+    setCompletedDetected(true);
     const key = report.controllerId || report.runId;
     if (!key || announced.current.has(key)) return;
     announced.current.add(key);
     window.dispatchEvent(new CustomEvent(FULL_CYCLE_COMPLETED_EVENT, { detail: report }));
-  }, [report]);
+    // Refresh the rest of the portal without a page reload.
+    void queryClient.invalidateQueries({ queryKey: ["portal-full-cycles"] });
+    void queryClient.invalidateQueries({ queryKey: ["portal-resource-guards"] });
+    void queryClient.invalidateQueries({ queryKey: ["portal-live-full-cycle"] });
+  }, [queryClient, report]);
+
+  const diagnostics = import.meta.env.DEV
+    ? {
+        liveMonitorMounted: true,
+        authenticatedSessionFound: authed,
+        controllerIdCaptured: Boolean(controllerId),
+        controllerPollRunning: pollRunning,
+        lastControllerStatus: report?.status ?? null,
+        lastControllerPhase: report?.currentPhase ?? null,
+        completedDetected,
+      }
+    : null;
 
   return (
     <Card className="flex flex-col gap-5 border-border bg-surface p-5 shadow-panel">
@@ -236,7 +315,10 @@ export function LiveOptimizationPanel() {
         </div>
         <div className="flex items-center gap-2">
           {report && report.status.toUpperCase() === "RUNNING" ? (
-            <Badge variant="outline" className="gap-1.5 border-primary/40 bg-primary/10 text-primary">
+            <Badge
+              variant="outline"
+              className="gap-1.5 border-primary/40 bg-primary/10 text-primary"
+            >
               <motion.span
                 animate={{ opacity: [1, 0.3, 1] }}
                 transition={{ duration: 1.2, repeat: Infinity }}
@@ -255,7 +337,6 @@ export function LiveOptimizationPanel() {
           Sign in to monitor your live optimization run.
         </p>
       ) : run.isPending ? (
-
         <div className="space-y-3">
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="h-24 w-full" />
@@ -271,7 +352,7 @@ export function LiveOptimizationPanel() {
           No active Full Cycle run for your account. Start one from the supervisor chat and the
           progress will appear here.
         </p>
-      ) : isTerminal(report.status) ? (
+      ) : isReportTerminal(report) ? (
         <ResultView report={report} />
       ) : (
         <div className="space-y-5">
@@ -283,10 +364,7 @@ export function LiveOptimizationPanel() {
             <Field label="Current phase" value={humanLabel(report.currentPhase)} />
             <Field label="AI Council verdict" value={report.aiCouncilVerdict} />
             <Field label="Scope coverage" value={report.scopeCoverage} />
-            <Field
-              label="Assessed clusters"
-              value={report.assessedClusters.join(", ") || "—"}
-            />
+            <Field label="Assessed clusters" value={report.assessedClusters.join(", ") || "—"} />
             <Field
               label="Unavailable clusters"
               value={report.unavailableClusters.join(", ") || "None"}
@@ -295,6 +373,14 @@ export function LiveOptimizationPanel() {
           <StageTracker report={report} />
         </div>
       )}
+
+      {diagnostics ? (
+        <pre className="overflow-x-auto rounded-lg border border-dashed border-border bg-background p-3 text-[11px] text-muted-foreground">
+          {Object.entries(diagnostics)
+            .map(([key, value]) => `${key}: ${value === null ? "null" : String(value)}`)
+            .join("\n")}
+        </pre>
+      ) : null}
     </Card>
   );
 }
