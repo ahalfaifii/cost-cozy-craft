@@ -137,17 +137,114 @@ export function findControllerIdInValue(input: unknown, depth = 0): string {
   return "";
 }
 
+/** Expected controller id shape, e.g. full-cycle-ertah-20260808144617-hl3rf */
+const CONTROLLER_FORMAT = /^full-cycle-[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)+$/;
+
+export function isValidControllerId(id: string): boolean {
+  const value = id.trim();
+  return value.length >= 12 && value.length <= 200 && CONTROLLER_FORMAT.test(value);
+}
+
+/**
+ * Copilot text can concatenate labels without spacing
+ * ("...-hl3rfRun ID:Status:..."), so cut any trailing field label.
+ */
+function trimTrailingLabel(raw: string): string {
+  let out = raw;
+  for (let i = 0; i < 6; i += 1) {
+    const next = out.replace(
+      /(?:Run(?:ID)?|Status|Phase|Service|Report|Requester|Next|Controller)$/,
+      "",
+    );
+    if (next === out) break;
+    out = next;
+  }
+  return out.replace(/[-_.:]+$/, "");
+}
+
+function cleanControllerCandidate(raw: string): string {
+  const trimmed = trimTrailingLabel(raw.trim().replace(/[.,`"')\]]+$/, ""));
+  return isValidControllerId(trimmed) ? trimmed : "";
+}
+
 /** Text fallback: only used when the copilot exposes the response as plain text. */
 export function findControllerIdInText(text: string): string {
   if (!text) return "";
-  const labelled = text.match(/controller\s*id\s*[:=]?\s*[`"']?([A-Za-z0-9._:-]{6,200})/i);
-  if (labelled?.[1]) return labelled[1].replace(/[.,`"')\]]+$/, "");
-  const bare = text.match(/\bfull-cycle-[A-Za-z0-9._:-]{3,190}\b/i);
-  return bare?.[0]?.replace(/[.,`"')\]]+$/, "") ?? "";
+  // Stop the capture at a newline or at the next known field label.
+  const labelled = text.match(
+    /controller\s*id\s*[:=]?\s*[`"']?([A-Za-z0-9._:-]{6,200}?)(?=\s*(?:Run\s*ID|RunID|Status|Phase|Service|Report|Next|$|[\s,`"')\]]))/i,
+  );
+  const fromLabel = cleanControllerCandidate(labelled?.[1] ?? "");
+  if (fromLabel) return fromLabel;
+  const bare = text.match(/full-cycle-[A-Za-z0-9._:-]{3,190}/i);
+  return cleanControllerCandidate(bare?.[0] ?? "");
+}
+
+export type ControllerSource = "structured" | "text-fallback";
+
+export function extractControllerIdWithSource(
+  value: unknown,
+  text: string,
+): { controllerId: string; source: ControllerSource } | null {
+  const structured = cleanControllerCandidate(findControllerIdInValue(value));
+  if (structured) return { controllerId: structured, source: "structured" };
+  const parsed = findControllerIdInText(text);
+  if (parsed) return { controllerId: parsed, source: "text-fallback" };
+  return null;
 }
 
 export function extractControllerId(value: unknown, text: string): string {
-  return findControllerIdInValue(value) || findControllerIdInText(text);
+  return extractControllerIdWithSource(value, text)?.controllerId ?? "";
+}
+
+/** Derives the service from the controller id: full-cycle-<service>-<stamp>-<rand>. */
+export function serviceFromControllerId(controllerId: string): string {
+  const parts = controllerId.split("-");
+  return parts.length >= 4 ? (parts[2] ?? "") : "";
+}
+
+/** Optimistic report used the instant a controller id is latched. */
+export function startingReport(controllerId: string, service?: string): FullCycleReport {
+  return {
+    service: service || serviceFromControllerId(controllerId) || "—",
+    runId: "—",
+    controllerId,
+    status: "FULL_CYCLE_ACCEPTED",
+    terminalState: false,
+    currentPhase: "BACKGROUND_CONTROLLER_STARTED",
+    completedStages: [],
+    aiCouncilVerdict: "—",
+    scopeCoverage: "—",
+    assessedClusters: [],
+    unavailableClusters: [],
+    approvedDeploymentCount: 0,
+    blockedDeploymentCount: 0,
+    rawOpportunityMonthlySavingsSar: 0,
+    rawOpportunityYearlySavingsSar: 0,
+    executableMonthlySavingsSar: 0,
+    executableYearlySavingsSar: 0,
+    blockedOpportunityMonthlySavingsSar: 0,
+    currentMonthlyRequestCostSar: 0,
+    targetMonthlyRequestCostSar: 0,
+    warnings: [],
+    hardBlockers: [],
+    approvedDeployments: [],
+    blockedDeployments: [],
+    nextAction: "",
+    completedAt: "",
+    reportArtifact: null,
+  };
+}
+
+/** Human status for the monitor — never "Unknown" once a controller is accepted. */
+export function liveStatusLabel(report: FullCycleReport): string {
+  const status = report.status.trim().toUpperCase();
+  if (!status || status === "—" || status === "UNKNOWN") return "Starting…";
+  if (status === "FULL_CYCLE_ACCEPTED") return "Starting…";
+  if (status === "RUNNING" || status === "IN_PROGRESS") {
+    return report.completedStages.length === 0 ? "Waiting for assessment…" : "Running";
+  }
+  return humanLabel(report.status);
 }
 
 /** Terminal detection tolerant of the backend's different completion signals. */
