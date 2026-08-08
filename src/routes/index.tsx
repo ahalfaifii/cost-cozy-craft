@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 
 import { CopilotChat } from "@/components/CopilotChat";
+import { ExecutiveImpact } from "@/components/ExecutiveImpact";
+import { TopOpportunities } from "@/components/TopOpportunities";
 import { FullCycleReports } from "@/components/FullCycleReports";
 import { LiveOptimizationPanel } from "@/components/LiveOptimizationPanel";
 import { OverviewSummary } from "@/components/OverviewSummary";
@@ -230,6 +232,17 @@ function Index() {
 
           </div>
 
+          <div className="mx-auto mt-10 flex max-w-2xl flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+            {["Analyze", "Right-size", "Save"].map((step, index) => (
+              <span key={step} className="flex items-center gap-2">
+                <span className="rounded-full border border-border bg-surface px-3 py-1 font-medium text-foreground">
+                  {step}
+                </span>
+                {index < 2 ? <span aria-hidden="true">→</span> : null}
+              </span>
+            ))}
+          </div>
+
           <dl className="mx-auto mt-14 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STATS.map((stat) => (
               <div key={stat.label} className="rounded-xl border border-border bg-surface p-5 text-left">
@@ -240,6 +253,10 @@ function Index() {
           </dl>
         </section>
       </div>
+
+      <section className="mx-auto max-w-6xl px-6 pt-16">
+        <ExecutiveImpact />
+      </section>
 
       <section id="demo" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-16">
         <div className="mb-8 max-w-2xl">
@@ -263,6 +280,7 @@ function Index() {
 
           <TabsContent value="overview" className="space-y-8">
             <OverviewSummary />
+            <TopOpportunities />
             <div>
               <h3 className="mb-4 font-display text-lg font-semibold">How a run flows</h3>
               <WorkflowRail steps={PIPELINE} />
