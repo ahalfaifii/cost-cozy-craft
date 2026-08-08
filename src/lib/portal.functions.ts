@@ -295,35 +295,16 @@ function single(body: unknown, keys: string[]): unknown | null {
  * Requester session (authoritative, server-side cookie)
  * ------------------------------------------------------------------ */
 
-export type RequesterSession = { requesterEmail: string | null };
+export type RequesterSession = { requesterEmail: string | null; requesterDisplayName: string | null };
 
 export const getPortalRequester = createServerFn({ method: "GET" }).handler(
   async (): Promise<RequesterSession> => {
-    const email = getCookie(REQUESTER_COOKIE);
-    return { requesterEmail: email && email.includes("@") ? email : null };
-  },
-);
-
-const EmailInput = z.object({ email: z.string().trim().email().max(254) });
-
-export const signInPortalRequester = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => EmailInput.parse(input))
-  .handler(async ({ data }): Promise<RequesterSession> => {
-    const email = data.email.toLowerCase();
-    setCookie(REQUESTER_COOKIE, email, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: true,
-      path: "/",
-      maxAge: 60 * 60 * 12,
-    });
-    return { requesterEmail: email };
-  });
-
-export const signOutPortalRequester = createServerFn({ method: "POST" }).handler(
-  async (): Promise<RequesterSession> => {
-    deleteCookie(REQUESTER_COOKIE, { path: "/" });
-    return { requesterEmail: null };
+    const { readPortalIdentity } = await import("./portal-session.server");
+    const identity = await readPortalIdentity();
+    return {
+      requesterEmail: identity?.email ?? null,
+      requesterDisplayName: identity?.displayName ?? null,
+    };
   },
 );
 
@@ -333,6 +314,8 @@ export const signOutPortalRequester = createServerFn({ method: "POST" }).handler
 
 export const getLatestFullCycleReports = createServerFn({ method: "POST" }).handler(
   async (): Promise<PortalResult<FullCycleReport[]>> => {
+    const { requirePortalIdentity } = await import("./portal-session.server");
+    await requirePortalIdentity();
     const result = await callBackend({ action: "latest-full-cycles", limit: 5 });
     if (!result.ok) return { state: result.state, message: result.message, data: [] };
     const items = collection(result.body, ["fullCycles", "reports", "fullCycleReports"]);
@@ -342,9 +325,10 @@ export const getLatestFullCycleReports = createServerFn({ method: "POST" }).hand
 
 export const getLiveFullCycle = createServerFn({ method: "POST" }).handler(
   async (): Promise<PortalResult<FullCycleReport | null> & { requesterEmail: string | null }> => {
-    // requesterEmail comes ONLY from the server session, never from the browser.
-    const cookie = getCookie(REQUESTER_COOKIE);
-    const requesterEmail = cookie && cookie.includes("@") ? cookie : null;
+    // requesterEmail comes ONLY from the authenticated server session, never from the browser.
+    const { readPortalIdentity } = await import("./portal-session.server");
+    const identity = await readPortalIdentity();
+    const requesterEmail = identity?.email ?? null;
     if (!requesterEmail) {
       return {
         state: "ok",
@@ -353,6 +337,7 @@ export const getLiveFullCycle = createServerFn({ method: "POST" }).handler(
         message: "Sign in to monitor your live optimization run.",
       };
     }
+
     const result = await callBackend({ action: "live-full-cycle", requesterEmail });
     if (!result.ok)
       return { state: result.state, message: result.message, data: null, requesterEmail };
