@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
 import {
@@ -6,20 +6,16 @@ import {
   Check,
   CircleDashed,
   FileSpreadsheet,
-  Loader2,
-  LogOut,
   Radio,
   ShieldAlert,
   TrendingDown,
-  UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FULL_CYCLE_COMPLETED_EVENT,
@@ -34,10 +30,9 @@ import {
 import {
   getLiveFullCycle,
   getPortalRequester,
-  signInPortalRequester,
-  signOutPortalRequester,
   type FullCycleReport,
 } from "@/lib/portal.functions";
+
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
