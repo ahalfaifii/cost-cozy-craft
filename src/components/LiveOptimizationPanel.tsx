@@ -374,13 +374,7 @@ export function LiveOptimizationPanel() {
         </div>
       )}
 
-      {diagnostics ? (
-        <pre className="overflow-x-auto rounded-lg border border-dashed border-border bg-background p-3 text-[11px] text-muted-foreground">
-          {Object.entries(diagnostics)
-            .map(([key, value]) => `${key}: ${value === null ? "null" : String(value)}`)
-            .join("\n")}
-        </pre>
-      ) : null}
+      {/* Dev diagnostics are intentionally kept out of the production/hackathon UI. */}
     </Card>
   );
 }
