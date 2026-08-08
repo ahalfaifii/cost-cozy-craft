@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Cpu, Loader2, LockKeyhole } from "lucide-react";
 import { useState } from "react";
@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getPortalSession, loginPortalUser } from "@/lib/portal-auth.functions";
+import {
+  getPortalAuthDiagnostics,
+  getPortalSession,
+  loginPortalUser,
+  type PortalAuthDiagnostics,
+} from "@/lib/portal-auth.functions";
+
 
 export const Route = createFileRoute("/login")({
   head: () => ({
