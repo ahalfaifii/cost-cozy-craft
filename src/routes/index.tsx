@@ -14,10 +14,16 @@ import {
 } from "lucide-react";
 
 import { CopilotChat } from "@/components/CopilotChat";
+import { FullCycleReports } from "@/components/FullCycleReports";
+import { LiveOptimizationPanel } from "@/components/LiveOptimizationPanel";
+import { OverviewSummary } from "@/components/OverviewSummary";
+import { ResourceGuardReports } from "@/components/ResourceGuardReports";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkflowRail } from "@/components/WorkflowRail";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 
 export const Route = createFileRoute("/")({
@@ -110,6 +116,26 @@ const STATS = [
   { value: "0", label: "Manual capacity spreadsheets required" },
 ];
 
+const BENEFITS = [
+  {
+    title: "Real money, evidenced in SAR",
+    body: "Every run reports raw opportunity and the executable portion after safety controls, so the committee sees what is actually bankable.",
+  },
+  {
+    title: "Safety before savings",
+    body: "The AI Council reviews each simulated change; anything risky is held back and surfaced as a blocked opportunity instead of applied.",
+  },
+  {
+    title: "Advisory, never disruptive",
+    body: "The portal and Resource Guard are read-only. Engineers keep full control of commits, merges and deployments.",
+  },
+  {
+    title: "Audit-ready reporting",
+    body: "Full Cycle runs keep run IDs, controller IDs, cluster coverage and Excel reports for review long after the demo.",
+  },
+];
+
+
 function Index() {
   return (
     <main className="min-h-screen bg-background">
@@ -176,46 +202,76 @@ function Index() {
         </section>
       </div>
 
-      <section id="demo" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-20">
+      <section id="demo" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-16">
         <div className="mb-8 max-w-2xl">
-          <p className="text-xs uppercase tracking-widest text-primary">Live demo</p>
-          <h2 className="mt-3 text-3xl font-semibold">Ask it about any of our services</h2>
+          <p className="text-xs uppercase tracking-widest text-primary">Cost optimization portal</p>
+          <h2 className="mt-3 text-3xl font-semibold">Everything the committee needs, in one view</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            Chat directly with OpenShift_MultiCluster_Supervisor. It starts a read-only dry-run
-            assessment, returns the run ID, and reports CPU and RAM savings per namespace.
+            A read-only, advisory portal over the live Full Cycle optimization runs, the AI Council
+            verdicts and the Resource Guard reviews.
           </p>
         </div>
-        <CopilotChat />
+
+        <Tabs defaultValue="overview" className="gap-6">
+          <TabsList className="h-auto flex-wrap justify-start gap-1 bg-surface p-1">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="live">Live Optimization</TabsTrigger>
+            <TabsTrigger value="reports">Full Cycle Reports</TabsTrigger>
+            <TabsTrigger value="guard">Resource Guard</TabsTrigger>
+            <TabsTrigger value="features">Features</TabsTrigger>
+            <TabsTrigger value="benefits">Benefits</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-8">
+            <OverviewSummary />
+            <div>
+              <h3 className="mb-4 font-display text-lg font-semibold">How a run flows</h3>
+              <WorkflowRail steps={PIPELINE} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="live">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <CopilotChat />
+              <LiveOptimizationPanel />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <FullCycleReports />
+          </TabsContent>
+
+          <TabsContent value="guard">
+            <ResourceGuardReports />
+          </TabsContent>
+
+          <TabsContent value="features">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {CAPABILITIES.map((item) => (
+                <Card key={item.title} className="border-border bg-surface p-5">
+                  <div className="w-fit rounded-md border border-border bg-background p-2">
+                    <item.icon className="size-4 text-primary" aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="benefits">
+            <div className="grid gap-4 md:grid-cols-2">
+              {BENEFITS.map((item) => (
+                <Card key={item.title} className="border-border bg-surface p-5">
+                  <h3 className="text-base font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </section>
 
-      <section id="how" className="border-y border-border bg-surface/40 scroll-mt-16">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="mb-10 max-w-2xl">
-            <p className="text-xs uppercase tracking-widest text-primary">The workflow</p>
-            <h2 className="mt-3 text-3xl font-semibold">Five steps, fully automated in n8n</h2>
-          </div>
-          <WorkflowRail steps={PIPELINE} />
-        </div>
-      </section>
-
-
-      <section className="mx-auto max-w-6xl px-6 py-20">
-        <div className="mb-10 max-w-2xl">
-          <p className="text-xs uppercase tracking-widest text-primary">Why the committee should back it</p>
-          <h2 className="mt-3 text-3xl font-semibold">Narrow scope, measurable return</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {CAPABILITIES.map((item) => (
-            <Card key={item.title} className="border-border bg-surface p-5">
-              <div className="w-fit rounded-md border border-border bg-background p-2">
-                <item.icon className="size-4 text-primary" aria-hidden="true" />
-              </div>
-              <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-10 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
