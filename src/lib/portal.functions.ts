@@ -81,6 +81,7 @@ type BackendCall = { ok: true; body: unknown } | { ok: false; state: PortalConfi
 async function callBackend(payload: Record<string, unknown>): Promise<BackendCall> {
   const url = process.env["PORTAL_BACKEND_URL"]?.trim();
   const secret = process.env["PORTAL_BACKEND_SECRET"]?.trim();
+  const userKey = process.env["PORTAL_3SCALE_USER_KEY"]?.trim();
 
   if (!url || !secret) {
     return {
@@ -91,15 +92,32 @@ async function callBackend(payload: Record<string, unknown>): Promise<BackendCal
     };
   }
 
+  if (!userKey) {
+    return {
+      ok: false,
+      state: "not-configured",
+      message: "PORTAL_3SCALE_USER_KEY is not configured.",
+    };
+  }
+
   try {
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-portal-secret": secret,
+        user_key: userKey,
       },
       body: JSON.stringify(payload),
     });
+    if (res.status === 401 || res.status === 403) {
+      return {
+        ok: false,
+        state: "error",
+        message:
+          "The portal backend rejected the request (authentication failed). Verify the portal and API gateway credentials configured on the server.",
+      };
+    }
     if (!res.ok) {
       return {
         ok: false,
@@ -112,6 +130,7 @@ async function callBackend(payload: Record<string, unknown>): Promise<BackendCal
     return { ok: false, state: "error", message: "The portal backend could not be reached." };
   }
 }
+
 
 /* ------------------------------------------------------------------ *
  * Lenient response normalisation
