@@ -192,7 +192,12 @@ function ResultView({ report }: { report: FullCycleReport }) {
 
 export function LiveOptimizationPanel() {
   const live = useServerFn(getLiveFullCycle);
+  const byController = useServerFn(getFullCycleByController);
   const requester = useServerFn(getPortalRequester);
+  const queryClient = useQueryClient();
+
+  const [controllerId, setControllerId] = useState<string | null>(null);
+  const [completedDetected, setCompletedDetected] = useState(false);
 
   const session = useQuery({
     queryKey: ["portal-requester"],
@@ -202,23 +207,76 @@ export function LiveOptimizationPanel() {
 
   const authed = Boolean(session.data?.requesterEmail);
 
-  const run = useQuery({
+  // Latch the controller id announced by the chat as soon as a Full Cycle starts.
+  useEffect(() => {
+    function onStarted(event: Event) {
+      const detail = (event as CustomEvent<{ controllerId?: string }>).detail;
+      const next = detail?.controllerId?.trim();
+      if (!next) return;
+      setControllerId((previous) => {
+        if (previous === next) return previous;
+        setCompletedDetected(false);
+        return next;
+      });
+    }
+    window.addEventListener(FULL_CYCLE_STARTED_EVENT, onStarted);
+    return () => window.removeEventListener(FULL_CYCLE_STARTED_EVENT, onStarted);
+  }, []);
+
+  // Discovery: keeps looking for the latest controller of the authenticated requester.
+  const discovery = useQuery({
     queryKey: ["portal-live-full-cycle"],
     queryFn: () => live(),
     enabled: authed,
     refetchInterval: authed ? 5000 : false,
   });
 
-  const announced = useRef(new Set<string>());
-  const report = run.data?.data ?? null;
+  const discovered = discovery.data?.data ?? null;
 
   useEffect(() => {
-    if (!report || !isTerminal(report.status)) return;
+    const found = discovered?.controllerId;
+    if (!controllerId && found && found !== "—") setControllerId(found);
+  }, [controllerId, discovered?.controllerId]);
+
+  // Controller poll: authoritative once a controller id is known.
+  const controllerRun = useQuery({
+    queryKey: ["portal-full-cycle-controller", controllerId],
+    queryFn: () => byController({ data: { controllerId: controllerId as string } }),
+    enabled: authed && Boolean(controllerId),
+    refetchInterval: authed && controllerId && !completedDetected ? 5000 : false,
+  });
+
+  const run = controllerId ? controllerRun : discovery;
+  const report = (controllerRun.data?.data ?? null) || (controllerId ? null : discovered);
+  const pollRunning = Boolean(authed && controllerId && !completedDetected);
+
+  const announced = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (!report || !isReportTerminal(report)) return;
+    setCompletedDetected(true);
     const key = report.controllerId || report.runId;
     if (!key || announced.current.has(key)) return;
     announced.current.add(key);
     window.dispatchEvent(new CustomEvent(FULL_CYCLE_COMPLETED_EVENT, { detail: report }));
-  }, [report]);
+    // Refresh the rest of the portal without a page reload.
+    void queryClient.invalidateQueries({ queryKey: ["portal-full-cycles"] });
+    void queryClient.invalidateQueries({ queryKey: ["portal-resource-guards"] });
+    void queryClient.invalidateQueries({ queryKey: ["portal-live-full-cycle"] });
+  }, [queryClient, report]);
+
+  const diagnostics = import.meta.env.DEV
+    ? {
+        liveMonitorMounted: true,
+        authenticatedSessionFound: authed,
+        controllerIdCaptured: Boolean(controllerId),
+        controllerPollRunning: pollRunning,
+        lastControllerStatus: report?.status ?? null,
+        lastControllerPhase: report?.currentPhase ?? null,
+        completedDetected,
+      }
+    : null;
+
 
   return (
     <Card className="flex flex-col gap-5 border-border bg-surface p-5 shadow-panel">
