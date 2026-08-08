@@ -114,10 +114,8 @@ export function CopilotChat() {
       if (!controllerId || announcedControllers.current.has(controllerId)) continue;
       announcedControllers.current.add(controllerId);
       // The newly started controller becomes the only authoritative live run.
-      setActiveControllerId(controllerId);
       activeControllerRef.current = controllerId;
-      // Drop any previous portal-generated result card from the live view.
-      setResults([]);
+
       window.dispatchEvent(
         new CustomEvent(FULL_CYCLE_STARTED_EVENT, {
           detail: {
