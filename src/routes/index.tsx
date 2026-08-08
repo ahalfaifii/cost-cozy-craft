@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Activity,
   Boxes,
@@ -8,6 +9,7 @@ import {
   GitPullRequest,
   Layers,
   LineChart,
+  LogOut,
   MemoryStick,
   ShieldCheck,
   Workflow,
@@ -21,8 +23,11 @@ import { ResourceGuardReports } from "@/components/ResourceGuardReports";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkflowRail } from "@/components/WorkflowRail";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getPortalSession, logoutPortalUser } from "@/lib/portal-auth.functions";
+
 
 
 
@@ -45,8 +50,15 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  beforeLoad: async () => {
+    const session = await getPortalSession();
+    if (!session.authenticated) throw redirect({ to: "/login" });
+    return { session };
+  },
+  loader: ({ context }) => ({ session: context.session }),
   component: Index,
 });
+
 
 const PIPELINE = [
   {
@@ -137,11 +149,21 @@ const BENEFITS = [
 
 
 function Index() {
+  const { session } = Route.useLoaderData();
+  const router = useRouter();
+  const logout = useServerFn(logoutPortalUser);
+
+  async function onSignOut() {
+    await logout();
+    await router.navigate({ to: "/login", replace: true });
+    router.invalidate();
+  }
+
   return (
     <main className="min-h-screen bg-background">
       <div className="relative overflow-hidden border-b border-border">
         <div className="pointer-events-none absolute inset-0 grid-backdrop opacity-40" aria-hidden="true" />
-        <header className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+        <header className="relative mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6">
           <div className="flex items-center gap-2">
             <div className="rounded-md border border-border bg-surface p-1.5">
               <Cpu className="size-4 text-primary" aria-hidden="true" />
@@ -151,6 +173,10 @@ function Index() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="hidden text-right sm:block">
+              <p className="text-xs font-medium leading-tight">{session.displayName}</p>
+              <p className="text-[11px] leading-tight text-muted-foreground">{session.email}</p>
+            </div>
             <a
               href="#demo"
               className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary"
@@ -158,7 +184,19 @@ function Index() {
               See the demo
             </a>
             <ThemeToggle />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Sign out"
+              onClick={() => {
+                void onSignOut();
+              }}
+            >
+              <LogOut className="size-4" aria-hidden="true" />
+            </Button>
           </div>
+
 
         </header>
 

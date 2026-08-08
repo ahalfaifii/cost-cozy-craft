@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
 import {
@@ -6,20 +6,16 @@ import {
   Check,
   CircleDashed,
   FileSpreadsheet,
-  Loader2,
-  LogOut,
   Radio,
   ShieldAlert,
   TrendingDown,
-  UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FULL_CYCLE_COMPLETED_EVENT,
@@ -34,10 +30,9 @@ import {
 import {
   getLiveFullCycle,
   getPortalRequester,
-  signInPortalRequester,
-  signOutPortalRequester,
   type FullCycleReport,
 } from "@/lib/portal.functions";
+
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -195,57 +190,9 @@ function ResultView({ report }: { report: FullCycleReport }) {
   );
 }
 
-function SignInCard() {
-  const signIn = useServerFn(signInPortalRequester);
-  const queryClient = useQueryClient();
-  const [email, setEmail] = useState("");
-  const mutation = useMutation({
-    mutationFn: (value: string) => signIn({ data: { email: value } }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["portal-requester"] });
-      void queryClient.invalidateQueries({ queryKey: ["portal-live-full-cycle"] });
-    },
-  });
-
-  return (
-    <form
-      className="space-y-3"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (email.includes("@")) mutation.mutate(email.trim());
-      }}
-    >
-      <p className="text-sm text-muted-foreground">Sign in to monitor your live optimization run.</p>
-      <div className="flex gap-2">
-        <Input
-          type="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="your.name@company.com"
-          aria-label="Work email"
-        />
-        <Button type="submit" disabled={mutation.isPending || !email.includes("@")}>
-          {mutation.isPending ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <UserRound className="size-4" aria-hidden="true" />
-          )}
-          Sign in
-        </Button>
-      </div>
-      {mutation.isError ? (
-        <p className="text-xs text-destructive">That email could not be accepted.</p>
-      ) : null}
-    </form>
-  );
-}
-
 export function LiveOptimizationPanel() {
   const live = useServerFn(getLiveFullCycle);
   const requester = useServerFn(getPortalRequester);
-  const signOut = useServerFn(signOutPortalRequester);
-  const queryClient = useQueryClient();
 
   const session = useQuery({
     queryKey: ["portal-requester"],
@@ -300,28 +247,15 @@ export function LiveOptimizationPanel() {
               Live
             </Badge>
           ) : null}
-          {authed ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Sign out"
-              onClick={() => {
-                void signOut().then(() => {
-                  void queryClient.invalidateQueries({ queryKey: ["portal-requester"] });
-                  queryClient.removeQueries({ queryKey: ["portal-live-full-cycle"] });
-                });
-              }}
-            >
-              <LogOut className="size-4" aria-hidden="true" />
-            </Button>
-          ) : null}
         </div>
       </div>
 
       {!authed ? (
-        <SignInCard />
+        <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          Sign in to monitor your live optimization run.
+        </p>
       ) : run.isPending ? (
+
         <div className="space-y-3">
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="h-24 w-full" />
