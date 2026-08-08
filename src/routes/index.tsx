@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Activity,
   Boxes,
@@ -8,6 +9,7 @@ import {
   GitPullRequest,
   Layers,
   LineChart,
+  LogOut,
   MemoryStick,
   ShieldCheck,
   Workflow,
@@ -21,8 +23,11 @@ import { ResourceGuardReports } from "@/components/ResourceGuardReports";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkflowRail } from "@/components/WorkflowRail";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getPortalSession, logoutPortalUser } from "@/lib/portal-auth.functions";
+
 
 
 

@@ -74,7 +74,7 @@ export type PortalResult<T> = {
  * Server-only backend call
  * ------------------------------------------------------------------ */
 
-const REQUESTER_COOKIE = "portal_requester";
+
 
 type BackendCall = { ok: true; body: unknown } | { ok: false; state: PortalConfigState; message: string };
 
