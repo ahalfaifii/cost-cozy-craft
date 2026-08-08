@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { useSession } from "@tanstack/react-start/server";
+import { getRequestHeader, getRequestUrl, useSession } from "@tanstack/react-start/server";
+
 
 /** Safe identity kept in the signed, HttpOnly session cookie. */
 export type PortalSessionData = {
