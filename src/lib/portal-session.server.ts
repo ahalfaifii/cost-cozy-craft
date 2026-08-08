@@ -1,5 +1,12 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { useSession } from "@tanstack/react-start/server";
+import {
+  getCookie,
+  getRequestHeader,
+  getRequestUrl,
+  useSession,
+} from "@tanstack/react-start/server";
+
+
 
 /** Safe identity kept in the signed, HttpOnly session cookie. */
 export type PortalSessionData = {
@@ -14,29 +21,60 @@ export type PortalIdentity = {
   authenticated: true;
 };
 
+function isHttps(): boolean {
+  try {
+    const forwarded = getRequestHeader("x-forwarded-proto");
+    if (forwarded) return forwarded.split(",")[0]?.trim() === "https";
+    return getRequestUrl().protocol === "https:";
+  } catch {
+    return true;
+  }
+}
+
 function sessionConfig() {
   const password = process.env["PORTAL_SESSION_SECRET"]?.trim();
   if (!password) {
     throw new Error("PORTAL_SESSION_SECRET is not configured.");
   }
+  // Over HTTPS the portal can be rendered inside an embedded preview frame — a
+  // cross-site context where SameSite=Lax cookies are dropped — so the session
+  // cookie must be None + Secure there. Plain-HTTP local dev cannot send
+  // Secure cookies, so it falls back to Lax.
+  const https = isHttps();
   return {
     password,
     name: "portal-session",
     maxAge: 60 * 60 * 12,
     cookie: {
       httpOnly: true,
-      sameSite: "lax" as const,
-      secure: process.env["NODE_ENV"] !== "development",
+      sameSite: https ? ("none" as const) : ("lax" as const),
+      secure: https,
       path: "/",
     },
   };
 }
 
+
+export function isSessionConfigured(): boolean {
+  return Boolean(process.env["PORTAL_SESSION_SECRET"]?.trim());
+}
+
+export function approvedUserCount(): number {
+  return readApprovedUsers()?.length ?? 0;
+}
+
+
 /** Reads the authenticated identity, or null. Never throws for anonymous users. */
 export async function readPortalIdentity(): Promise<PortalIdentity | null> {
+  // Important: useSession() issues a brand-new empty sealed cookie when none can
+  // be read, which would clobber a session cookie that was just written by a
+  // concurrent login request. Read-only checks therefore bail out first when no
+  // session cookie is present on the request.
+  if (!getCookie("portal-session")) return null;
   const session = await useSession<PortalSessionData>(sessionConfig());
   const data = session.data;
   if (!data?.authenticated || !data.email) return null;
+
   return {
     email: data.email,
     displayName: data.displayName ?? data.email,

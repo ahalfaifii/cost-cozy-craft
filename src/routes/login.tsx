@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Cpu, Loader2, LockKeyhole } from "lucide-react";
 import { useState } from "react";
@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getPortalSession, loginPortalUser } from "@/lib/portal-auth.functions";
+import {
+  getPortalAuthDiagnostics,
+  getPortalSession,
+  loginPortalUser,
+  type PortalAuthDiagnostics,
+} from "@/lib/portal-auth.functions";
+
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -36,12 +42,13 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
-  const router = useRouter();
   const login = useServerFn(loginPortalUser);
+  const diagnose = useServerFn(getPortalAuthDiagnostics);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [diag, setDiag] = useState<PortalAuthDiagnostics | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,16 +58,19 @@ function Login() {
       const result = await login({ data: { email: email.trim(), password } });
       if (result.ok) {
         setPassword("");
-        await router.navigate({ to: "/" });
+        // Full document load so the freshly issued HttpOnly session cookie is
+        // used for the protected route's server-side guard.
+        window.location.assign("/");
         return;
       }
       setError(result.message);
+      setPending(false);
     } catch {
       setError("Sign in could not be completed. Please try again.");
-    } finally {
       setPending(false);
     }
   }
+
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-12">
@@ -110,7 +120,11 @@ function Login() {
             />
           </div>
 
-          {error ? <p className="text-xs text-destructive">{error}</p> : null}
+          {error ? (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
 
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? (
@@ -121,6 +135,39 @@ function Login() {
             Enter the portal
           </Button>
         </form>
+
+        <div className="mt-5 border-t border-border pt-4">
+          <button
+            type="button"
+            className="text-[11px] uppercase tracking-wide text-muted-foreground underline-offset-2 hover:underline"
+            onClick={() => {
+              void diagnose().then(setDiag);
+            }}
+          >
+            Run access diagnostics
+          </button>
+          {diag ? (
+            <dl className="mt-3 space-y-1 font-mono text-[11px] text-muted-foreground">
+              <div className="flex justify-between gap-4">
+                <dt>approvedUsersConfigured</dt>
+                <dd>{String(diag.approvedUsersConfigured)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>approvedUserCount</dt>
+                <dd>{diag.approvedUserCount}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>sessionConfigurationReady</dt>
+                <dd>{String(diag.sessionConfigurationReady)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>loginHandlerReachable</dt>
+                <dd>{String(diag.loginHandlerReachable)}</dd>
+              </div>
+            </dl>
+          ) : null}
+        </div>
+
       </Card>
     </main>
   );

@@ -41,13 +41,40 @@ export const loginPortalUser = createServerFn({ method: "POST" })
         ok: false,
         message:
           check.reason === "not-configured"
-            ? "Pilot access is not configured yet. Add PORTAL_APPROVED_USERS as a server-side secret."
-            : "Those credentials are not on the approved pilot list.",
+            ? "Portal approved users are not configured."
+            : "Invalid email or password.",
       };
     }
-    await writePortalIdentity(check.email, check.displayName);
+    try {
+      await writePortalIdentity(check.email, check.displayName);
+    } catch {
+      // No stack traces or secret values are surfaced to the browser.
+      return { ok: false, message: "Unable to create your portal session." };
+    }
     return { ok: true, email: check.email, displayName: check.displayName };
   });
+
+export type PortalAuthDiagnostics = {
+  approvedUsersConfigured: boolean;
+  approvedUserCount: number;
+  sessionConfigurationReady: boolean;
+  loginHandlerReachable: boolean;
+};
+
+/** Temporary, non-sensitive diagnostics: no emails, passwords, hashes or cookies. */
+export const getPortalAuthDiagnostics = createServerFn({ method: "GET" }).handler(
+  async (): Promise<PortalAuthDiagnostics> => {
+    const { approvedUserCount, isSessionConfigured } = await import("./portal-session.server");
+    const count = approvedUserCount();
+    return {
+      approvedUsersConfigured: count > 0,
+      approvedUserCount: count,
+      sessionConfigurationReady: isSessionConfigured(),
+      loginHandlerReachable: typeof loginPortalUser === "function",
+    };
+  },
+);
+
 
 export const logoutPortalUser = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ ok: true }> => {
