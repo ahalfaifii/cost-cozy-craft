@@ -182,8 +182,9 @@ export function CopilotChat() {
             {error
               ? "Not connected"
               : session.current
-                ? "Connected · dry-run, read-only"
+                ? `Connected · ${requesterEmail ?? ""} · dry-run, read-only`
                 : "Connecting…"}
+
           </p>
         </div>
       </div>
