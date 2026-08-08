@@ -184,11 +184,12 @@ function Index() {
               Run the live demo
             </a>
             <a
-              href="#how"
+              href="#demo"
               className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-5 py-2.5 text-sm font-medium transition-colors hover:border-primary"
             >
-              How the workflow runs
+              Open the portal
             </a>
+
           </div>
 
           <dl className="mx-auto mt-14 grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
