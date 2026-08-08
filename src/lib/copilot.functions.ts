@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { extractControllerId } from "./portal-format";
+import { extractControllerIdWithSource, type ControllerSource } from "./portal-format";
 
 const DIRECT_LINE_BASE = "https://directline.botframework.com/v3/directline";
 
@@ -11,6 +11,8 @@ export type CopilotActivity = {
   text: string;
   /** Controller id latched from structured fields when the agent exposes them. */
   controllerId?: string;
+  /** Where the controller id came from: structured payload or text fallback. */
+  controllerSource?: ControllerSource;
 };
 
 export type CopilotSession = {
@@ -234,7 +236,7 @@ export const pollCopilotActivities = createServerFn({ method: "POST" })
         )
         .map((activity, index) => {
           const text = (activity.text ?? "").trim();
-          const controllerId = extractControllerId(
+          const controller = extractControllerIdWithSource(
             { value: activity.value, channelData: activity.channelData },
             text,
           );
@@ -242,7 +244,9 @@ export const pollCopilotActivities = createServerFn({ method: "POST" })
             id: activity.id ?? `${data.conversationId}-${index}`,
             from: activity.from?.id === "web-user" ? ("user" as const) : ("bot" as const),
             text,
-            ...(controllerId ? { controllerId } : {}),
+            ...(controller
+              ? { controllerId: controller.controllerId, controllerSource: controller.source }
+              : {}),
           };
         });
 
