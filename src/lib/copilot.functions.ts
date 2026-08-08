@@ -32,6 +32,8 @@ function readSecret() {
 /** Opens a Direct Line conversation with the Copilot Studio agent. */
 export const startCopilotConversation = createServerFn({ method: "POST" }).handler(
   async (): Promise<CopilotSession> => {
+    const { requirePortalIdentity } = await import("./portal-session.server");
+    await requirePortalIdentity();
     const secret = readSecret();
     if (!secret) {
       return {
@@ -90,6 +92,8 @@ const SendInput = z.object({
 export const sendCopilotMessage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SendInput.parse(input))
   .handler(async ({ data }): Promise<{ ok: boolean; error?: string }> => {
+    const { requirePortalIdentity } = await import("./portal-session.server");
+    await requirePortalIdentity();
     const res = await fetch(
       `${DIRECT_LINE_BASE}/conversations/${encodeURIComponent(data.conversationId)}/activities`,
       {
@@ -125,6 +129,8 @@ export const pollCopilotActivities = createServerFn({ method: "POST" })
     async ({
       data,
     }): Promise<{ activities: CopilotActivity[]; watermark: string | null; error?: string }> => {
+      const { requirePortalIdentity } = await import("./portal-session.server");
+      await requirePortalIdentity();
       const query = data.watermark ? `?watermark=${encodeURIComponent(data.watermark)}` : "";
       const res = await fetch(
         `${DIRECT_LINE_BASE}/conversations/${encodeURIComponent(data.conversationId)}/activities${query}`,
