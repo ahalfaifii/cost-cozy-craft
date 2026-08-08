@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
 import {
@@ -11,7 +11,7 @@ import {
   TrendingDown,
   X,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,9 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FULL_CYCLE_COMPLETED_EVENT,
+  FULL_CYCLE_STARTED_EVENT,
   STAGES,
-  isTerminal,
+  isReportTerminal,
   humanLabel,
   sar,
   stageStates,
@@ -28,6 +29,7 @@ import {
   verdictClass,
 } from "@/lib/portal-format";
 import {
+  getFullCycleByController,
   getLiveFullCycle,
   getPortalRequester,
   type FullCycleReport,
@@ -329,7 +331,7 @@ export function LiveOptimizationPanel() {
           No active Full Cycle run for your account. Start one from the supervisor chat and the
           progress will appear here.
         </p>
-      ) : isTerminal(report.status) ? (
+      ) : isReportTerminal(report) ? (
         <ResultView report={report} />
       ) : (
         <div className="space-y-5">
@@ -353,6 +355,14 @@ export function LiveOptimizationPanel() {
           <StageTracker report={report} />
         </div>
       )}
+
+      {diagnostics ? (
+        <pre className="overflow-x-auto rounded-lg border border-dashed border-border bg-background p-3 text-[11px] text-muted-foreground">
+          {Object.entries(diagnostics)
+            .map(([key, value]) => `${key}: ${value === null ? "null" : String(value)}`)
+            .join("\n")}
+        </pre>
+      ) : null}
     </Card>
   );
 }
