@@ -161,6 +161,11 @@ function ResultView({ report }: { report: FullCycleReport }) {
       <div className="grid gap-3 rounded-xl border border-border bg-background p-4 sm:grid-cols-2">
         <Field label="Current monthly request cost" value={sar(report.currentMonthlyRequestCostSar)} />
         <Field label="Target monthly request cost" value={sar(report.targetMonthlyRequestCostSar)} />
+        <Field label="Service" value={report.service} />
+        <Field label="Run ID" value={report.runId} />
+        <Field label="Controller ID" value={report.controllerId} />
+        <Field label="Current phase" value={humanLabel(report.currentPhase)} />
+        <Field label="Completed stages" value={report.completedStages.join(", ") || "—"} />
         <Field label="Approved deployments" value={String(report.approvedDeploymentCount)} />
         <Field label="Blocked deployments" value={String(report.blockedDeploymentCount)} />
         <Field label="AI Council verdict" value={report.aiCouncilVerdict} />
