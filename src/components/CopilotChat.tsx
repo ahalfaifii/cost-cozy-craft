@@ -61,6 +61,7 @@ export function CopilotChat() {
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<FullCycleReport[]>([]);
+  const [requesterEmail, setRequesterEmail] = useState<string | null>(null);
 
 
   const session = useRef<{ conversationId: string; token: string } | null>(null);
@@ -76,8 +77,10 @@ export function CopilotChat() {
         return;
       }
       session.current = { conversationId: result.conversationId, token: result.token };
+      setRequesterEmail(result.requesterEmail);
       setError(null);
     },
+
     onError: () => setError("Could not reach the copilot backend."),
   });
 
@@ -179,8 +182,9 @@ export function CopilotChat() {
             {error
               ? "Not connected"
               : session.current
-                ? "Connected · dry-run, read-only"
+                ? `Connected · ${requesterEmail ?? ""} · dry-run, read-only`
                 : "Connecting…"}
+
           </p>
         </div>
       </div>
