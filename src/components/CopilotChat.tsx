@@ -25,6 +25,7 @@ import {
   FULL_CYCLE_STARTED_EVENT,
   humanLabel,
   sar,
+  serviceFromControllerId,
   verdictClass,
 } from "@/lib/portal-format";
 import type { FullCycleReport } from "@/lib/portal.functions";
@@ -66,11 +67,13 @@ export function CopilotChat() {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<FullCycleReport[]>([]);
   const [requesterEmail, setRequesterEmail] = useState<string | null>(null);
+  const [activeControllerId, setActiveControllerId] = useState<string | null>(null);
 
   const session = useRef<{ conversationId: string; token: string } | null>(null);
   const watermark = useRef<string | null>(null);
   const seen = useRef(new Set<string>());
   const announcedControllers = useRef(new Set<string>());
+  const activeControllerRef = useRef<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const connect = useMutation({
@@ -121,7 +124,22 @@ export function CopilotChat() {
       const controllerId = activity.controllerId;
       if (!controllerId || announcedControllers.current.has(controllerId)) continue;
       announcedControllers.current.add(controllerId);
-      window.dispatchEvent(new CustomEvent(FULL_CYCLE_STARTED_EVENT, { detail: { controllerId } }));
+      // The newly started controller becomes the only authoritative live run.
+      setActiveControllerId(controllerId);
+      activeControllerRef.current = controllerId;
+      // Drop any previous portal-generated result card from the live view.
+      setResults([]);
+      window.dispatchEvent(
+        new CustomEvent(FULL_CYCLE_STARTED_EVENT, {
+          detail: {
+            controllerId,
+            controllerSource: activity.controllerSource ?? "text-fallback",
+            service: serviceFromControllerId(controllerId),
+            status: "FULL_CYCLE_ACCEPTED",
+            currentPhase: "BACKGROUND_CONTROLLER_STARTED",
+          },
+        }),
+      );
     }
   }, [poll]);
 
@@ -170,6 +188,9 @@ export function CopilotChat() {
     function onCompleted(event: Event) {
       const report = (event as CustomEvent<FullCycleReport>).detail;
       if (!report) return;
+      // One active run = one result card: ignore completions of other controllers.
+      const active = activeControllerRef.current;
+      if (active && report.controllerId && report.controllerId !== active) return;
       setResults((previous) =>
         previous.some((item) => item.controllerId === report.controllerId)
           ? previous
