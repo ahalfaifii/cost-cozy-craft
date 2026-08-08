@@ -60,9 +60,15 @@ export function approvedUserCount(): number {
 
 /** Reads the authenticated identity, or null. Never throws for anonymous users. */
 export async function readPortalIdentity(): Promise<PortalIdentity | null> {
+  // Important: useSession() issues a brand-new empty sealed cookie when none can
+  // be read, which would clobber a session cookie that was just written by a
+  // concurrent login request. Read-only checks therefore bail out first when no
+  // session cookie is present on the request.
+  if (!getCookie("portal-session")) return null;
   const session = await useSession<PortalSessionData>(sessionConfig());
   const data = session.data;
   if (!data?.authenticated || !data.email) return null;
+
   return {
     email: data.email,
     displayName: data.displayName ?? data.email,
