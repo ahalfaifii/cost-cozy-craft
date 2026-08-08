@@ -50,8 +50,15 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  beforeLoad: async () => {
+    const session = await getPortalSession();
+    if (!session.authenticated) throw redirect({ to: "/login" });
+    return { session };
+  },
+  loader: ({ context }) => ({ session: context.session }),
   component: Index,
 });
+
 
 const PIPELINE = [
   {
