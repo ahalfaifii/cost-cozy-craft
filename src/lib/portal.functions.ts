@@ -15,6 +15,7 @@ export type FullCycleReport = {
   runId: string;
   controllerId: string;
   status: string;
+  terminalState: boolean;
   currentPhase: string;
   completedStages: string[];
   aiCouncilVerdict: string;
@@ -165,6 +166,13 @@ function num(source: Record<string, unknown>, keys: string[]): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function bool(source: Record<string, unknown>, keys: string[]): boolean {
+  const value = pick(source, keys);
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.trim().toLowerCase() === "true";
+  return false;
+}
+
 function list(source: Record<string, unknown>, keys: string[]): string[] {
   const value = pick(source, keys);
   if (Array.isArray(value)) {
@@ -208,6 +216,7 @@ function toFullCycle(input: unknown): FullCycleReport {
     runId: str(merged, ["runId", "run_id", "runID"], "—"),
     controllerId: str(merged, ["controllerId", "controller_id", "controllerID"], "—"),
     status: str(merged, ["status", "state"], "UNKNOWN"),
+    terminalState: bool(merged, ["terminalState", "terminal", "isTerminal", "isComplete", "completed"]),
     currentPhase: str(merged, ["currentPhase", "phase", "currentStage"], "—"),
     completedStages: list(merged, ["completedStages", "completed_stages", "stages"]),
     aiCouncilVerdict: str(merged, ["aiCouncilVerdict", "councilVerdict", "verdict"], "—"),
