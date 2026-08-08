@@ -1,18 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "motion/react";
-import {
-  AlertTriangle,
-  Check,
-  CircleDashed,
-  FileSpreadsheet,
-  Radio,
-  ShieldAlert,
-  TrendingDown,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Check, FileSpreadsheet, Radio, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { AgentReasoning } from "@/components/AgentReasoning";
+import { OptimizationResultCard } from "@/components/OptimizationResultCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,14 +13,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   FULL_CYCLE_COMPLETED_EVENT,
   FULL_CYCLE_STARTED_EVENT,
-  STAGES,
   isReportTerminal,
   isValidControllerId,
   liveStatusLabel,
   humanLabel,
   sar,
   serviceFromControllerId,
-  stageStates,
   startingReport,
   statusClass,
   verdictClass,
@@ -66,57 +57,6 @@ function Kpi({ label, value, accent }: { label: string; value: string; accent?: 
         {value}
       </p>
     </motion.div>
-  );
-}
-
-function StageTracker({ report }: { report: FullCycleReport }) {
-  const states = stageStates(report);
-  return (
-    <ol className="relative space-y-0.5">
-      <span className="absolute left-[11px] top-2 bottom-2 w-px bg-border" aria-hidden="true" />
-      {STAGES.map((stage, index) => {
-        const state = states[index];
-        return (
-          <li key={stage.key} className="relative flex items-center gap-2.5 py-1">
-            <span
-              className={`relative z-10 flex size-[23px] shrink-0 items-center justify-center rounded-full border ${
-                state === "completed"
-                  ? "border-success/50 bg-success/15 text-success"
-                  : state === "active"
-                    ? "border-primary bg-primary/15 text-primary"
-                    : state === "failed"
-                      ? "border-destructive/50 bg-destructive/15 text-destructive"
-                      : "border-border bg-background text-muted-foreground"
-              }`}
-            >
-              {state === "completed" ? (
-                <Check className="size-3" aria-hidden="true" />
-              ) : state === "active" ? (
-                <motion.span
-                  animate={{ scale: [1, 1.35, 1], opacity: [1, 0.55, 1] }}
-                  transition={{ duration: 1.4, repeat: Infinity }}
-                  className="size-1.5 rounded-full bg-primary"
-                />
-              ) : state === "failed" ? (
-                <X className="size-3" aria-hidden="true" />
-              ) : (
-                <CircleDashed className="size-3" aria-hidden="true" />
-              )}
-            </span>
-            <span
-              className={`truncate text-xs ${state === "pending" ? "text-muted-foreground" : "text-foreground"}`}
-            >
-              {stage.label}
-            </span>
-            {state === "active" ? (
-              <span className="ml-auto shrink-0 text-[10px] uppercase tracking-wide text-primary">
-                in progress
-              </span>
-            ) : null}
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 
@@ -164,6 +104,8 @@ function ResultView({ report }: { report: FullCycleReport }) {
       </motion.div>
 
       <ReportHeader report={report} />
+
+      <OptimizationResultCard report={report} />
 
       <div className="grid gap-2.5 sm:grid-cols-2">
         <Kpi label="Raw monthly opportunity" value={sar(report.rawOpportunityMonthlySavingsSar)} />
@@ -447,7 +389,7 @@ export function LiveOptimizationPanel() {
             />
             <Field label="Completed stages" value={String(report.completedStages.length)} />
           </div>
-          <StageTracker report={report} />
+          <AgentReasoning report={report} />
         </div>
       )}
     </Card>
