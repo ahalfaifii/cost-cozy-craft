@@ -14,7 +14,17 @@ export type CopilotSession = {
   conversationId: string;
   token: string;
   watermark: string | null;
+  /** Authenticated requester, derived server-side from the portal session only. */
+  requesterEmail: string;
   reason?: string;
+  diagnostics: CopilotConnectDiagnostics;
+};
+
+export type CopilotConnectDiagnostics = {
+  portalSessionFound: boolean;
+  requesterContextPrepared: boolean;
+  directLineConversationCreated: boolean;
+  pvaSetContextDelivered: boolean;
 };
 
 type DirectLineActivity = {
@@ -29,23 +39,57 @@ function readSecret() {
   return process.env["COPILOT_DIRECTLINE_SECRET"]?.trim();
 }
 
+const EMPTY_DIAGNOSTICS: CopilotConnectDiagnostics = {
+  portalSessionFound: false,
+  requesterContextPrepared: false,
+  directLineConversationCreated: false,
+  pvaSetContextDelivered: false,
+};
+
+function failed(reason: string, diagnostics: CopilotConnectDiagnostics): CopilotSession {
+  return {
+    connected: false,
+    conversationId: "",
+    token: "",
+    watermark: null,
+    requesterEmail: "",
+    reason,
+    diagnostics,
+  };
+}
+
 /** Opens a Direct Line conversation with the Copilot Studio agent. */
 export const startCopilotConversation = createServerFn({ method: "POST" }).handler(
   async (): Promise<CopilotSession> => {
     const { requirePortalIdentity } = await import("./portal-session.server");
-    await requirePortalIdentity();
-    const secret = readSecret();
-    if (!secret) {
-      return {
-        connected: false,
-        conversationId: "",
-        token: "",
-        watermark: null,
-        reason:
-          "COPILOT_DIRECTLINE_SECRET is not configured. Add the Direct Line secret from Copilot Studio as a server-side secret to connect this agent.",
-      };
+    // Fail closed: no authenticated portal session means no Direct Line conversation.
+    const identity = await requirePortalIdentity();
+    const diagnostics: CopilotConnectDiagnostics = {
+      ...EMPTY_DIAGNOSTICS,
+      portalSessionFound: true,
+    };
+
+    // The requester context is built exclusively from the signed server session.
+    const requesterContext = {
+      RequesterEmail: identity.email,
+      RequesterDisplayName: identity.displayName,
+      PortalAuthenticated: "true",
+    };
+    diagnostics.requesterContextPrepared = Boolean(requesterContext.RequesterEmail);
+    if (!diagnostics.requesterContextPrepared) {
+      return failed(
+        "Authenticated requester context could not be provided to the Supervisor Agent.",
+        diagnostics,
+      );
     }
 
+    const secret = readSecret();
+    if (!secret) {
+      return failed(
+        "COPILOT_DIRECTLINE_SECRET is not configured. Add the Direct Line secret from Copilot Studio as a server-side secret to connect this agent.",
+        diagnostics,
+      );
+    }
 
     const res = await fetch(`${DIRECT_LINE_BASE}/conversations`, {
       method: "POST",
@@ -53,24 +97,47 @@ export const startCopilotConversation = createServerFn({ method: "POST" }).handl
     });
 
     if (!res.ok) {
-      return {
-        connected: false,
-        conversationId: "",
-        token: "",
-        watermark: null,
-        reason: `The copilot rejected the connection (status ${res.status}). Please verify the Direct Line secret.`,
-      };
+      return failed(
+        `The copilot rejected the connection (status ${res.status}). Please verify the Direct Line secret.`,
+        diagnostics,
+      );
     }
 
     const body = (await res.json()) as { conversationId?: string; token?: string };
     if (!body.conversationId || !body.token) {
-      return {
-        connected: false,
-        conversationId: "",
-        token: "",
-        watermark: null,
-        reason: "The copilot did not return a conversation. Please try again.",
-      };
+      return failed("The copilot did not return a conversation. Please try again.", diagnostics);
+    }
+    diagnostics.directLineConversationCreated = true;
+
+    // Hand the authenticated identity to the agent before any user turn.
+    try {
+      const contextRes = await fetch(
+        `${DIRECT_LINE_BASE}/conversations/${encodeURIComponent(body.conversationId)}/activities`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${body.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "event",
+            name: "pvaSetContext",
+            from: { id: "portal-user" },
+            value: requesterContext,
+          }),
+        },
+      );
+      diagnostics.pvaSetContextDelivered = contextRes.ok;
+    } catch {
+      diagnostics.pvaSetContextDelivered = false;
+    }
+
+    if (!diagnostics.pvaSetContextDelivered) {
+      // Fail closed rather than letting the agent run without a verified requester.
+      return failed(
+        "Authenticated requester context could not be provided to the Supervisor Agent.",
+        diagnostics,
+      );
     }
 
     return {
@@ -78,9 +145,12 @@ export const startCopilotConversation = createServerFn({ method: "POST" }).handl
       conversationId: body.conversationId,
       token: body.token,
       watermark: null,
+      requesterEmail: identity.email,
+      diagnostics,
     };
   },
 );
+
 
 const SendInput = z.object({
   conversationId: z.string().min(1),
