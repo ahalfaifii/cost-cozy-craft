@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, ServerCog } from "lucide-react";
+import { AlertTriangle, BrainCircuit, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -16,7 +16,9 @@ import {
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { AgentReasoning } from "@/components/AgentReasoning";
 import { Card } from "@/components/ui/card";
+import { PROMPT_PREFILL_EVENT } from "@/lib/impact";
 import { FULL_CYCLE_STARTED_EVENT, serviceFromControllerId } from "@/lib/portal-format";
 import {
   pollCopilotActivities,
@@ -25,11 +27,12 @@ import {
   type CopilotActivity,
 } from "@/lib/copilot.functions";
 
-
 const SUGGESTIONS = [
-  "how much can we save for nafath?",
-  "what happened for runid: multicluster-nafath-20260803142148",
-  "run a dry-run savings assessment for iam2",
+  "Can I save cost for Elmx?",
+  "Why is Ertah overprovisioned?",
+  "What are my top optimization opportunities?",
+  "How much could we save this month?",
+  "What is the recommended sizing for Yakeen service?",
 ];
 
 /** Turns raw Copilot Studio error codes into guidance the committee can act on. */
@@ -56,7 +59,6 @@ export function CopilotChat() {
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requesterEmail, setRequesterEmail] = useState<string | null>(null);
-
 
   const session = useRef<{ conversationId: string; token: string } | null>(null);
   const watermark = useRef<string | null>(null);
@@ -170,20 +172,35 @@ export function CopilotChat() {
     textareaRef.current?.focus();
   }, []);
 
-  // Completed Full Cycle results are owned exclusively by LiveOptimizationPanel.
+  // Ranked opportunity cards hand a question to this existing chat flow.
+  useEffect(() => {
+    function onPrefill(event: Event) {
+      const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt?.trim();
+      if (!prompt) return;
+      setInput(prompt);
+      textareaRef.current?.focus();
+    }
+    window.addEventListener(PROMPT_PREFILL_EVENT, onPrefill);
+    return () => window.removeEventListener(PROMPT_PREFILL_EVENT, onPrefill);
+  }, []);
 
+  // Completed Full Cycle results are owned exclusively by LiveOptimizationPanel.
 
   return (
     <Card className="flex h-[620px] flex-col overflow-hidden border-border bg-surface shadow-panel">
-      <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-        <div className="rounded-md border border-border bg-background p-2">
-          <ServerCog className="size-4 text-primary" aria-hidden="true" />
+      <div className="flex items-start gap-3 border-b border-border bg-gradient-to-r from-primary/10 via-surface to-surface px-5 py-4">
+        <div className="rounded-lg border border-primary/30 bg-primary/10 p-2">
+          <BrainCircuit className="size-5 text-primary" aria-hidden="true" />
         </div>
-        <div className="min-w-0">
-          <p className="truncate font-mono text-sm text-foreground">
-            OpenShift_MultiCluster_Supervisor
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-sm font-semibold text-foreground">
+            OptiShift Agentic AI
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="truncate text-xs text-muted-foreground">
+            Your Agentic OpenShift FinOps Advisor · ask about resource sizing, optimization
+            opportunities and infrastructure cost.
+          </p>
+          <p className="mt-1 truncate text-[11px] text-muted-foreground">
             {error
               ? "Not connected"
               : session.current
@@ -201,18 +218,6 @@ export function CopilotChat() {
                 Ask about a service and the supervisor will start a read-only savings assessment,
                 report the run ID, and follow up with the final CPU and RAM savings.
               </p>
-              <div className="flex flex-wrap gap-2">
-                {SUGGESTIONS.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => void submit(suggestion)}
-                    className="rounded-full border border-border bg-background px-3 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
             </div>
           ) : null}
 
@@ -224,13 +229,13 @@ export function CopilotChat() {
             </Message>
           ))}
 
-
-
-
           {waiting ? (
             <Message from="assistant">
               <MessageContent>
-                <Shimmer>Assessing workloads…</Shimmer>
+                <div className="space-y-3">
+                  <Shimmer>Reasoning over live OpenShift utilization…</Shimmer>
+                  <AgentReasoning compact />
+                </div>
               </MessageContent>
             </Message>
           ) : null}
@@ -263,6 +268,22 @@ export function CopilotChat() {
             <PromptInputSubmit status={waiting ? "submitted" : "ready"} disabled={!input.trim()} />
           </PromptInputFooter>
         </PromptInput>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {SUGGESTIONS.map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              onClick={() => void submit(suggestion)}
+              className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+            >
+              <Sparkles
+                className="size-3 text-muted-foreground transition-colors group-hover:text-primary"
+                aria-hidden="true"
+              />
+              {suggestion}
+            </button>
+          ))}
+        </div>
       </div>
     </Card>
   );

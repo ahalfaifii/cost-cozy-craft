@@ -15,10 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { humanLabel, riskClass, sar, shortCommit, whenLabel } from "@/lib/portal-format";
-import {
-  getLatestResourceGuardReports,
-  type ResourceGuardReport,
-} from "@/lib/portal.functions";
+import { getLatestResourceGuardReports, type ResourceGuardReport } from "@/lib/portal.functions";
 
 function EvidenceList({ title, items }: { title: string; items: string[] }) {
   return (
@@ -179,7 +176,12 @@ export function ResourceGuardReports() {
                 ) : null}
 
                 <div className="mt-4">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setSelected(report)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelected(report)}
+                  >
                     View evidence
                   </Button>
                 </div>

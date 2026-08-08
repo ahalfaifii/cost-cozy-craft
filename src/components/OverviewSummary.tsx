@@ -8,10 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { humanLabel, riskClass, sar, verdictClass } from "@/lib/portal-format";
-import {
-  getLatestFullCycleReports,
-  getLatestResourceGuardReports,
-} from "@/lib/portal.functions";
+import { getLatestFullCycleReports, getLatestResourceGuardReports } from "@/lib/portal.functions";
 
 function SummaryCard({
   icon: Icon,
