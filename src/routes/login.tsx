@@ -120,7 +120,11 @@ function Login() {
             />
           </div>
 
-          {error ? <p className="text-xs text-destructive">{error}</p> : null}
+          {error ? (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
 
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? (
@@ -131,6 +135,39 @@ function Login() {
             Enter the portal
           </Button>
         </form>
+
+        <div className="mt-5 border-t border-border pt-4">
+          <button
+            type="button"
+            className="text-[11px] uppercase tracking-wide text-muted-foreground underline-offset-2 hover:underline"
+            onClick={() => {
+              void diagnose().then(setDiag);
+            }}
+          >
+            Run access diagnostics
+          </button>
+          {diag ? (
+            <dl className="mt-3 space-y-1 font-mono text-[11px] text-muted-foreground">
+              <div className="flex justify-between gap-4">
+                <dt>approvedUsersConfigured</dt>
+                <dd>{String(diag.approvedUsersConfigured)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>approvedUserCount</dt>
+                <dd>{diag.approvedUserCount}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>sessionConfigurationReady</dt>
+                <dd>{String(diag.sessionConfigurationReady)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>loginHandlerReachable</dt>
+                <dd>{String(diag.loginHandlerReachable)}</dd>
+              </div>
+            </dl>
+          ) : null}
+        </div>
+
       </Card>
     </main>
   );
