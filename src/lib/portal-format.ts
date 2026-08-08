@@ -200,7 +200,7 @@ export function extractControllerId(value: unknown, text: string): string {
 /** Derives the service from the controller id: full-cycle-<service>-<stamp>-<rand>. */
 export function serviceFromControllerId(controllerId: string): string {
   const parts = controllerId.split("-");
-  return parts.length >= 4 ? parts[2] ?? "" : "";
+  return parts.length >= 4 ? (parts[2] ?? "") : "";
 }
 
 /** Optimistic report used the instant a controller id is latched. */
@@ -246,7 +246,6 @@ export function liveStatusLabel(report: FullCycleReport): string {
   }
   return humanLabel(report.status);
 }
-
 
 /** Terminal detection tolerant of the backend's different completion signals. */
 export function isReportTerminal(report: {

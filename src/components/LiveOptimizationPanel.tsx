@@ -44,10 +44,7 @@ function Field({ label, value, mono = true }: { label: string; value: string; mo
   return (
     <div className="min-w-0">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p
-        className={`truncate text-xs text-foreground ${mono ? "font-mono" : ""}`}
-        title={value}
-      >
+      <p className={`truncate text-xs text-foreground ${mono ? "font-mono" : ""}`} title={value}>
         {value || "—"}
       </p>
     </div>
@@ -146,7 +143,8 @@ function ReportHeader({ report }: { report: FullCycleReport }) {
 }
 
 function ResultView({ report }: { report: FullCycleReport }) {
-  const executable = report.executableMonthlySavingsSar > 0 || report.executableYearlySavingsSar > 0;
+  const executable =
+    report.executableMonthlySavingsSar > 0 || report.executableYearlySavingsSar > 0;
 
   return (
     <div className="space-y-4">
@@ -254,11 +252,13 @@ export function LiveOptimizationPanel() {
   // A newly announced controller from the chat wins over anything already shown.
   useEffect(() => {
     function onStarted(event: Event) {
-      const detail = (event as CustomEvent<{
-        controllerId?: string;
-        controllerSource?: ControllerSource;
-        service?: string;
-      }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          controllerId?: string;
+          controllerSource?: ControllerSource;
+          service?: string;
+        }>
+      ).detail;
       const next = detail?.controllerId?.trim();
       if (!next || !isValidControllerId(next)) return;
       setActiveControllerId((previous) => (previous === next ? previous : next));
@@ -350,18 +350,31 @@ export function LiveOptimizationPanel() {
     void queryClient.invalidateQueries({ queryKey: ["portal-overview"] });
   }, [queryClient, matchedReport]);
 
-  const diagnostics = import.meta.env.DEV
-    ? {
-        activeControllerId,
-        controllerSource,
-        exactControllerPolling: exactPolling,
-        discoveryPolling: discoveryEnabled,
-        lastStatus: report?.status ?? null,
-        lastPhase: report?.currentPhase ?? null,
-        lastControllerIdReturned: backendReport?.controllerId ?? null,
-        ignoredMismatchedControllerCount,
-      }
-    : null;
+  const diagnostics = useMemo(
+    () =>
+      import.meta.env.DEV
+        ? {
+            activeControllerId,
+            controllerSource,
+            exactControllerPolling: exactPolling,
+            discoveryPolling: discoveryEnabled,
+            lastStatus: report?.status ?? null,
+            lastPhase: report?.currentPhase ?? null,
+            lastControllerIdReturned: backendReport?.controllerId ?? null,
+            ignoredMismatchedControllerCount,
+          }
+        : null,
+    [
+      activeControllerId,
+      controllerSource,
+      exactPolling,
+      discoveryEnabled,
+      report?.status,
+      report?.currentPhase,
+      backendReport?.controllerId,
+      ignoredMismatchedControllerCount,
+    ],
+  );
 
   useEffect(() => {
     if (diagnostics) console.debug("[live-monitor]", diagnostics);
